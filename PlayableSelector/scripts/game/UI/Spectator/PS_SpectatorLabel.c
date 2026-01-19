@@ -81,7 +81,7 @@ class PS_SpectatorLabel : ScriptComponent
 		if (!m_MapEntity.IsOpen()) return false;
 		if (!m_hManualMarkerComponent) CreateMarker();
 		
-		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.GetInstance();
 		if (gameModeCoop.GetFriendliesSpectatorOnly())
 		{
 			SCR_ChimeraCharacter chimeraCharacter = SCR_ChimeraCharacter.Cast(GetOwner());

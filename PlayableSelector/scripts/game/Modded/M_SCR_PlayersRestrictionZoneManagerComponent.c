@@ -7,7 +7,7 @@ modded class SCR_PlayersRestrictionZoneManagerComponent
 	
 	override protected void KillPlayerOutOfZone(int playerID, IEntity playerEntity)
 	{
-		PS_GameModeCoop gameMode = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameMode = PS_GameModeCoop.GetInstance();
 		if (gameMode.GetElapsedTime() > (gameMode.m_iFreezeTime - 2000))
 			return;
 		

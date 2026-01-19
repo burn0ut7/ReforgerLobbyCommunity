@@ -128,7 +128,7 @@ class PS_PlayableComponent : ScriptComponent
 	{
 		RplComponent rpl = RplComponent.Cast(GetOwner().FindComponent(RplComponent));
 		m_RplId = rpl.Id();
-		m_GameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		m_GameModeCoop = PS_GameModeCoop.GetInstance();
 		m_PlayableManager = PS_PlayableManager.GetInstance();
 
 		m_PlayableContainer = new PS_PlayableContainer();

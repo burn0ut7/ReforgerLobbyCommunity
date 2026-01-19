@@ -2,7 +2,7 @@ modded class SCR_MapMarkerSquadLeader
 {
 	override void OnCreateMarker()
 	{
-		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.GetInstance();
 		if (!gameModeCoop)
 		{
 			super.OnCreateMarker();

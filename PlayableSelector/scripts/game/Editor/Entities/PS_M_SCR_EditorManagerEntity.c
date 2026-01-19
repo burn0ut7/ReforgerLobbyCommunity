@@ -7,7 +7,7 @@ modded class SCR_EditorManagerEntity
 		// We Can only do this shit, but editor can't be more fucking horrible thin he is right now, soo i don't give a shit
 		if (mode == EEditorMode.PHOTO)
 		{
-			PS_GameModeCoop gameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+			PS_GameModeCoop gameModeCoop = PS_GameModeCoop.GetInstance();
 			if (gameModeCoop.IsArmaVisionDisabled())
 			{
 				SCR_EditorModeEntity editorModeEntity = super.CreateEditorMode(mode, isInit, prefab);

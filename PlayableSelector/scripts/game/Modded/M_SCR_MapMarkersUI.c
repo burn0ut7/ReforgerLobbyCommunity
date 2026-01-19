@@ -3,7 +3,7 @@ modded class SCR_MapMarkersUI
 {
 	override protected void OnInputQuickMarkerMenu(float value, EActionTrigger reason)
 	{
-		PS_GameModeCoop psGameMode = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop psGameMode = PS_GameModeCoop.GetInstance();
 		if (psGameMode)
 		{
 			if (psGameMode.GetMarkersOnlyOnBriefing())

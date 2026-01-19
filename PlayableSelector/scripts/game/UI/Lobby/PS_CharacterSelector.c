@@ -80,7 +80,7 @@ class PS_CharacterSelector : SCR_ButtonComponent
 		super.HandlerAttached(w);
 		
 		// Cache global
-		m_GameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		m_GameModeCoop = PS_GameModeCoop.GetInstance();
 		m_PlayableManager = PS_PlayableManager.GetInstance();
 		m_PlayerController = GetGame().GetPlayerController();
 		if (!m_PlayerController)
@@ -475,13 +475,13 @@ class PS_CharacterSelector : SCR_ButtonComponent
 			}
 			
 			SCR_UISoundEntity.SoundEvent("SOUND_HUD_GADGET_SELECT");
-			m_PlayableControllerComponent.MoveToVoNRoom(playerId, m_sFactionKey, m_sPlayableCallsign);
+			m_PlayableControllerComponent.AskMoveVoNRoom(EVoNRoomType.GROUP);
 			m_PlayableControllerComponent.ChangeFactionKey(playerId, m_sFactionKey);
 			m_PlayableControllerComponent.SetPlayerState(playerId, PS_EPlayableControllerState.NotReady);	
 			m_PlayableControllerComponent.SetPlayerPlayable(playerId, m_iPlayableId);
 		} else {
 			SCR_UISoundEntity.SoundEvent("SOUND_HUD_GADGET_SELECT");
-			m_PlayableControllerComponent.MoveToVoNRoom(playerId, m_sFactionKey, "#PS-VoNRoom_Faction");
+			m_PlayableControllerComponent.AskMoveVoNRoom(EVoNRoomType.FACTION);
 			m_PlayableControllerComponent.ChangeFactionKey(playerId, "");
 			m_PlayableControllerComponent.SetPlayerState(playerId, PS_EPlayableControllerState.NotReady);
 			m_PlayableControllerComponent.SetPlayerPlayable(playerId, RplId.Invalid());
@@ -576,7 +576,7 @@ class PS_CharacterSelector : SCR_ButtonComponent
 			return;
 		
 		SCR_UISoundEntity.SoundEvent("SOUND_LOBBY_KICK");
-		m_PlayableControllerComponent.MoveToVoNRoom(m_iPlayerId, m_sFactionKey, "#PS-VoNRoom_Faction");
+		m_PlayableControllerComponent.AskMoveVoNRoom(EVoNRoomType.FACTION);
 		m_PlayableControllerComponent.ChangeFactionKey(m_iPlayerId, "");
 		m_PlayableControllerComponent.SetPlayerState(m_iPlayerId, PS_EPlayableControllerState.NotReady);
 		m_PlayableControllerComponent.SetPlayerPlayable(m_iPlayerId, -1);
@@ -602,7 +602,7 @@ class PS_CharacterSelector : SCR_ButtonComponent
 				break;
 			case PS_ECharacterState.Kick:
 				SCR_UISoundEntity.SoundEvent("SOUND_LOBBY_KICK");
-				m_PlayableControllerComponent.MoveToVoNRoom(m_iPlayerId, m_sFactionKey, "#PS-VoNRoom_Faction");
+				m_PlayableControllerComponent.AskMoveVoNRoom(EVoNRoomType.GLOBAL);
 				m_PlayableControllerComponent.ChangeFactionKey(m_iPlayerId, "");
 				m_PlayableControllerComponent.SetPlayerState(m_iPlayerId, PS_EPlayableControllerState.NotReady);
 				m_PlayableControllerComponent.SetPlayerPlayable(m_iPlayerId, -1);
@@ -619,7 +619,7 @@ class PS_CharacterSelector : SCR_ButtonComponent
 				break;
 			case PS_ECharacterState.Disconnected:
 				SCR_UISoundEntity.SoundEvent("SOUND_LOBBY_KICK");
-				m_PlayableControllerComponent.MoveToVoNRoom(m_iPlayerId, m_PlayableManager.GetPlayerFactionKey(m_iPlayerId), "#PS-VoNRoom_Faction");
+				m_PlayableControllerComponent.AskMoveVoNRoom(EVoNRoomType.FACTION);
 				m_PlayableControllerComponent.ChangeFactionKey(m_iPlayerId, "");
 				m_PlayableControllerComponent.SetPlayerPlayable(m_iPlayerId, RplId.Invalid());
 				break;
@@ -630,7 +630,7 @@ class PS_CharacterSelector : SCR_ButtonComponent
 	bool CanJoinFaction()
 	{
 		// Check faction balance
-		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.GetInstance();
 		if (m_PlayableContainer)
 		{
 			if (!PS_PlayersHelper.IsAdminOrServer() && !gameModeCoop.CanJoinFaction(m_sFactionKey, m_PlayableManager.GetPlayerFactionKey(m_iCurrentPlayerId)))

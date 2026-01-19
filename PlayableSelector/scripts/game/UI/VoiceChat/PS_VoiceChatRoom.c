@@ -6,8 +6,7 @@ class PS_VoiceChatRoom : SCR_ScriptedWidgetComponent
 	// Global cached
 	protected PlayerManager m_gPlayerManager;
 	protected PS_PlayableManager m_gPlayableManager;
-	protected PS_VoNRoomsManager m_gVoNRoomsManager;
-	
+
 	// Local
 	int m_iRoomId;
 	PS_VoiceRoomHeader m_hRoomHandler;
@@ -26,7 +25,7 @@ class PS_VoiceChatRoom : SCR_ScriptedWidgetComponent
 		// global
 		m_gPlayerManager   = GetGame().GetPlayerManager();
 		m_gPlayableManager = PS_PlayableManager.GetInstance();
-		m_gVoNRoomsManager = PS_VoNRoomsManager.GetInstance();
+		//m_gVoNRoomsManager = PS_VoNRoomsManager.GetInstance();
 		
 		// local
 		m_hRoomHandler = PS_VoiceRoomHeader.Cast(w.FindAnyWidget("VoiceRoomHeader").FindHandler(PS_VoiceRoomHeader));
@@ -44,6 +43,7 @@ class PS_VoiceChatRoom : SCR_ScriptedWidgetComponent
 	
 	void SetRoomId(int roomId)
 	{
+		/*
 		m_iRoomId = roomId;
 		
 		string roomName = m_gVoNRoomsManager.GetRoomName(roomId);
@@ -58,6 +58,7 @@ class PS_VoiceChatRoom : SCR_ScriptedWidgetComponent
 		SCR_FactionManager factionManager = SCR_FactionManager.Cast(GetGame().GetFactionManager());
 		SCR_Faction faction = SCR_Faction.Cast(factionManager.GetFactionByKey(factionKey));
 		m_hRoomHandler.SetRoomName(faction, roomName, roomId);
+		*/
 	}
 	
 	void AddPlayer(int playerId)

@@ -22,7 +22,7 @@ class PS_PolyZoneObjectiveTrigger : PS_PolyZoneTrigger
 		if (!Replication.IsServer())
 			EnablePeriodicQueries(false);
 		
-		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.GetInstance();
 		gameModeCoop.GetOnGameStateChange().Insert(OnGameStateChange);
 		gameModeCoop.GetOnOnlyOneFactionAlive().Insert(OnOnlyOneFactionAlive);
 		

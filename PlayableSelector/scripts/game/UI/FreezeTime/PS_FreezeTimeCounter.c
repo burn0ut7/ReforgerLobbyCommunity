@@ -45,7 +45,7 @@ class PS_FreezeTimeCounter : SCR_ScriptedWidgetComponent
 		}
 		
 		
-		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.GetInstance();
 		if (gameModeCoop.IsDisableTimeEnd())
 		{
 			m_wFreezeTimeText.SetText("#PS-Freeze_time");

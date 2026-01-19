@@ -66,7 +66,7 @@ class PS_ManualCameraSpectator : SCR_ManualCamera
 	{
 		vector newTransform[4];
 		GetTransform(newTransform);
-		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.GetInstance();
 		if (!SCR_Math3D.MatrixEqual(newTransform, oldTransform) && !gameModeCoop.GetFriendliesSpectatorOnly() && !m_bMoveLink)
 		{
 			SetCharacterEntity(null);

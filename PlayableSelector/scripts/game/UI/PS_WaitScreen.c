@@ -22,7 +22,7 @@ class PS_WaitScreen: MenuBase
 	
 	void AwaitPlayerController()
 	{
-		PS_GameModeCoop gameMode = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameMode = PS_GameModeCoop.GetInstance();
 		if (!gameMode)
 		{
 			m_wInfoText.SetText("Awaiting gamemode entity.");
@@ -62,12 +62,14 @@ class PS_WaitScreen: MenuBase
 			return;
 		}
 		
+		/*
 		PS_VoNRoomsManager VoNRoomsManager = PS_VoNRoomsManager.GetInstance();
 		if (!VoNRoomsManager.IsReplicated())
 		{
 			m_wInfoText.SetText("Awaiting VoNRoomsManager replication.");
 			return;
 		}
+		*/
 		
 		if (playerController.GetPlayerId() == 0)
 		{
@@ -88,6 +90,7 @@ class PS_WaitScreen: MenuBase
 			return;
 		}
 		
+		/*
 		int publicRoomId = VoNRoomsManager.GetRoomWithFaction("", "#PS-VoNRoom_Public" + playerController.GetPlayerId().ToString());
 		int globalRoomId = VoNRoomsManager.GetRoomWithFaction("", "#PS-VoNRoom_Global");
 		if (publicRoomId == -1 || globalRoomId == -1)
@@ -98,13 +101,14 @@ class PS_WaitScreen: MenuBase
 		
 		int roomId = VoNRoomsManager.GetPlayerRoom(playerController.GetPlayerId());
 		string roomKey = VoNRoomsManager.GetRoomName(roomId);
+		*/
 		
 		m_bWaitEnded = true;
 		Close();
 		
 		PS_PlayableControllerComponent playableController = PS_PlayableControllerComponent.Cast(playerController.FindComponent(PS_PlayableControllerComponent));
 		playableController.SetPlayerState(playerController.GetPlayerId(), PS_EPlayableControllerState.NotReady);
-		playableController.MoveToVoNRoomByKey(playerController.GetPlayerId(), roomKey);
+		//playableController.MoveToVoNRoomByKey(playerController.GetPlayerId(), roomKey);
 		playableController.SwitchToMenu(gameMode.GetState());
 		
 		GetGame().GetCallqueue().Remove(AwaitPlayerController);

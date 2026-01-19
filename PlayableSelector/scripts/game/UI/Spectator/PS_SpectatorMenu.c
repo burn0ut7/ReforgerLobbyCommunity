@@ -142,7 +142,7 @@ class PS_SpectatorMenu: MenuBase
 			Close();
 			return;
 		}
-		m_GameMode = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		m_GameMode = PS_GameModeCoop.GetInstance();
 		m_PlayableManager = PS_PlayableManager.GetInstance();
 		
 		m_wVoiceChatList = GetRootWidget().FindAnyWidget("VoiceChatFrame");
@@ -346,7 +346,7 @@ class PS_SpectatorMenu: MenuBase
 	{
 		PlayerController playerController = GetGame().GetPlayerController();
 		PS_PlayableControllerComponent playableController = PS_PlayableControllerComponent.Cast(playerController.FindComponent(PS_PlayableControllerComponent));
-		playableController.MoveToVoNRoom(playerController.GetPlayerId(), "", "#PS-VoNRoom_Global");
+		m_PlayableControllerComponent.AskMoveVoNRoom(EVoNRoomType.GLOBAL);
 	}
 	
 	void InitChat()

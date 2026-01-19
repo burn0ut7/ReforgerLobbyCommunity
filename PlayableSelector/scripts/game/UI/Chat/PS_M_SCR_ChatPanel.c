@@ -9,7 +9,7 @@ modded class SCR_ChatPanel : ScriptedWidgetComponent
 		if (!playableManager)
 			return super.UpdateChatMessages();
 		FactionKey factionKey = playableManager.GetPlayerFactionKey(playerController.GetPlayerId());
-		PS_GameModeCoop gameMode = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameMode = PS_GameModeCoop.GetInstance();
 		if (!gameMode.IsChatDisabled() || gameMode.GetState() == SCR_EGameModeState.SLOTSELECTION || gameMode.GetState() == SCR_EGameModeState.BRIEFING || factionKey == "" || PS_PlayersHelper.IsAdminOrServer())
 			super.UpdateChatMessages();
 		else

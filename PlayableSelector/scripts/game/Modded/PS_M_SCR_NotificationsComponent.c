@@ -3,7 +3,7 @@ modded class SCR_NotificationsComponent
 	[RplRpc(RplChannel.Reliable, RplRcver.Owner)]
 	override protected void ReceiveSCR_NotificationData(ENotification id, SCR_NotificationData data)
 	{
-		PS_GameModeCoop gameMode = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameMode = PS_GameModeCoop.GetInstance();
 		if (!gameMode)
 		{
 			super.ReceiveSCR_NotificationData(id, data);

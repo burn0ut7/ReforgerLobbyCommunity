@@ -48,7 +48,7 @@ class PS_PlayerVoiceSelector : SCR_ButtonComponent
 		PlayerManager playerManager = GetGame().GetPlayerManager();
 		PS_PlayableManager playableManager = PS_PlayableManager.GetInstance();
 		SCR_FactionManager factionManager = SCR_FactionManager.Cast(GetGame().GetFactionManager());
-		PS_VoNRoomsManager VoNRoomsManager = PS_VoNRoomsManager.GetInstance();
+		//PS_VoNRoomsManager VoNRoomsManager = PS_VoNRoomsManager.GetInstance();
 		if (!playableManager)
 			return;
 		
@@ -58,8 +58,8 @@ class PS_PlayerVoiceSelector : SCR_ButtonComponent
 		string playerName = playableManager.GetPlayerName(m_iPlayerId);
 		SCR_Faction faction = SCR_Faction.Cast(factionManager.GetFactionByKey(factionKey));
 		EPlayerRole playerRole = playerManager.GetPlayerRoles(m_iPlayerId);
-		int playerRoomId = VoNRoomsManager.GetPlayerRoom(m_iPlayerId);
-		string playerRoom = VoNRoomsManager.GetRoomName(playerRoomId);
+		//int playerRoomId = VoNRoomsManager.GetPlayerRoom(m_iPlayerId);
+		//string playerRoom = VoNRoomsManager.GetRoomName(playerRoomId);
 		int groupCallSign = playableManager.GetGroupCallsignByPlayable(playableId);
 		 
 		// current player
@@ -67,8 +67,8 @@ class PS_PlayerVoiceSelector : SCR_ButtonComponent
 		int currentPlayerId = currentPlayerController.GetPlayerId();
 		EPlayerRole currentPlayerRole = playerManager.GetPlayerRoles(currentPlayerController.GetPlayerId());
 		PS_PlayableControllerComponent currentPlayableController = PS_PlayableControllerComponent.Cast(currentPlayerController.FindComponent(PS_PlayableControllerComponent));
-		int currentPlayerRoomId = VoNRoomsManager.GetPlayerRoom(currentPlayerId);
-		string currentPlayerRoom = VoNRoomsManager.GetRoomName(currentPlayerRoomId);
+		//int currentPlayerRoomId = VoNRoomsManager.GetPlayerRoom(currentPlayerId);
+		//string currentPlayerRoom = VoNRoomsManager.GetRoomName(currentPlayerRoomId);
 		int currentGroupCallSign = playableManager.GetGroupCallsignByPlayable(m_iPlayerId);
 				
 		// update
@@ -79,12 +79,14 @@ class PS_PlayerVoiceSelector : SCR_ButtonComponent
 		else m_wCharacterFactionColor.SetColor(Color.FromInt(0xFF2c2c2c));
 		
 		bool showKick = PS_PlayersHelper.IsAdminOrServer();
+		/*
 		if (playerRoomId == currentPlayerRoomId) {
 			if (currentPlayerRoom.Contains(currentGroupCallSign.ToString())) {
 				if (!showKick) showKick = groupCallSign != currentGroupCallSign;
 			}
 			if (!showKick && currentPlayerRoom.Contains("#PS-VoNRoom_Command")) showKick = !playableManager.IsPlayerGroupLeader(m_iPlayerId) && playableManager.IsPlayerGroupLeader(currentPlayerId);
 		}
+		*/
 		//m_wKickButton.SetVisible(showKick);
 		int currentPlayerIdInt = currentPlayerId;
 		PS_CoopLobby coopLobby = PS_CoopLobby.Cast(GetGame().GetMenuManager().FindMenuByPreset(ChimeraMenuPreset.CoopLobby));
@@ -160,7 +162,7 @@ class PS_PlayerVoiceSelector : SCR_ButtonComponent
 		PlayerManager playerManager = GetGame().GetPlayerManager();
 		PS_PlayableManager playableManager = PS_PlayableManager.GetInstance();
 		SCR_FactionManager factionManager = SCR_FactionManager.Cast(GetGame().GetFactionManager());
-		PS_VoNRoomsManager VoNRoomsManager = PS_VoNRoomsManager.GetInstance();
+		//PS_VoNRoomsManager VoNRoomsManager = PS_VoNRoomsManager.GetInstance();
 		
 		if (PS_PlayersHelper.IsAdminOrServer())
 		{
@@ -177,7 +179,7 @@ class PS_PlayerVoiceSelector : SCR_ButtonComponent
 		{
 			contextMenu.ActionPlayerSelect(m_iPlayerId);
 			
-			PS_GameModeCoop gameMode = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+			PS_GameModeCoop gameMode = PS_GameModeCoop.GetInstance();
 			RplId playableId = playableManager.GetPlayableByPlayerRemembered(m_iPlayerId);
 			if (playableId != RplId.Invalid() && gameMode.GetState() == SCR_EGameModeState.GAME)
 			{
@@ -191,8 +193,8 @@ class PS_PlayerVoiceSelector : SCR_ButtonComponent
 		//string playerName = playableManager.GetPlayerName(m_iPlayerId);
 		SCR_Faction faction = SCR_Faction.Cast(factionManager.GetFactionByKey(factionKey));
 		EPlayerRole playerRole = playerManager.GetPlayerRoles(m_iPlayerId);
-		int playerRoomId = VoNRoomsManager.GetPlayerRoom(m_iPlayerId);
-		string playerRoom = VoNRoomsManager.GetRoomName(playerRoomId);
+		//int playerRoomId = VoNRoomsManager.GetPlayerRoom(m_iPlayerId);
+		//string playerRoom = VoNRoomsManager.GetRoomName(playerRoomId);
 		int groupCallSign = playableManager.GetGroupCallsignByPlayable(playableId);
 		
 		// current player
@@ -200,17 +202,19 @@ class PS_PlayerVoiceSelector : SCR_ButtonComponent
 		int currentPlayerId = currentPlayerController.GetPlayerId();
 		EPlayerRole currentPlayerRole = playerManager.GetPlayerRoles(currentPlayerController.GetPlayerId());
 		PS_PlayableControllerComponent currentPlayableController = PS_PlayableControllerComponent.Cast(currentPlayerController.FindComponent(PS_PlayableControllerComponent));
-		int currentPlayerRoomId = VoNRoomsManager.GetPlayerRoom(currentPlayerId);
-		string currentPlayerRoom = VoNRoomsManager.GetRoomName(currentPlayerRoomId);
+		//int currentPlayerRoomId = VoNRoomsManager.GetPlayerRoom(currentPlayerId);
+		//string currentPlayerRoom = VoNRoomsManager.GetRoomName(currentPlayerRoomId);
 		int currentGroupCallSign = playableManager.GetGroupCallsignByPlayable(m_iPlayerId);
 		
 		bool showKick = PS_PlayersHelper.IsAdminOrServer();
+		/*
 		if (playerRoomId == currentPlayerRoomId) {
 			if (currentPlayerRoom.Contains(currentGroupCallSign.ToString())) {
 				if (!showKick) showKick = groupCallSign != currentGroupCallSign;
 			}
 			if (!showKick && currentPlayerRoom.Contains("#PS-VoNRoom_Command")) showKick = !playableManager.IsPlayerGroupLeader(m_iPlayerId) && playableManager.IsPlayerGroupLeader(currentPlayerId);
 		}
+		*/
 		if (showKick)
 			contextMenu.ActionVoiceKick(m_iPlayerId).Insert(OnActionVoiceKick);
 		
@@ -224,7 +228,7 @@ class PS_PlayerVoiceSelector : SCR_ButtonComponent
 		// global
 		PlayerManager playerManager = GetGame().GetPlayerManager();
 		PS_PlayableManager playableManager = PS_PlayableManager.GetInstance();
-		PS_GameModeCoop gameMode = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameMode = PS_GameModeCoop.GetInstance();
 		SCR_EGameModeState gameState = gameMode.GetState();
 		
 		SCR_UISoundEntity.SoundEvent("SOUND_LOBBY_KICK");

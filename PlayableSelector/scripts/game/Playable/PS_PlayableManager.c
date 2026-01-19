@@ -134,7 +134,7 @@ class PS_PlayableManager : ScriptComponent
 		OnStartTimerCounterChanged();
 		if (m_iStartTimerCounter == 0)
 		{
-			PS_GameModeCoop gameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+			PS_GameModeCoop gameModeCoop = PS_GameModeCoop.GetInstance();
 			gameModeCoop.AdvanceGameState(SCR_EGameModeState.SLOTSELECTION);
 			m_CallQueue.Remove(StartTime);
 		}
@@ -166,7 +166,7 @@ class PS_PlayableManager : ScriptComponent
 		s_Instance = this;
 
 		//Cache
-		m_GameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		m_GameModeCoop = PS_GameModeCoop.GetInstance();
 		m_CallQueue = GetGame().GetCallqueue();
 		m_PlayerManager = GetGame().GetPlayerManager();
 
@@ -277,7 +277,7 @@ class PS_PlayableManager : ScriptComponent
 	// --------------------------------------------------------------------------------------------
 	protected void DelayedSwitchToInitialEntity(int playerId)
 	{
-		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.GetInstance();
 		gameModeCoop.SwitchToInitialEntity(playerId);
 	}
 
@@ -387,8 +387,10 @@ class PS_PlayableManager : ScriptComponent
 		SCR_CallsignGroupComponent callsignComponent = SCR_CallsignGroupComponent.Cast(playerGroup.FindComponent(SCR_CallsignGroupComponent));
 		callsignComponent.ReAssignGroupCallsign(company, platoon, squad);
 
-		m_CallQueue.CallLater(RegisterGroupName, 0, false, playableId, playerGroup) // Delay for callsign init
+		//m_CallQueue.CallLater(RegisterGroupName, 0, false, playableId, playerGroup) // Delay for callsign init
 	}
+	
+	/*
 	protected void RegisterGroupName(RplId playableId, SCR_AIGroup playerGroup)
 	{
 		// Get group callsign
@@ -403,6 +405,8 @@ class PS_PlayableManager : ScriptComponent
 		VoNRoomsManager.GetOrCreateRoomWithFaction(playerGroup.GetFaction().GetFactionKey(), "#PS-VoNRoom_Command");
 		VoNRoomsManager.GetOrCreateRoomWithFaction(playerGroup.GetFaction().GetFactionKey(), "#PS-VoNRoom_Faction");
 	}
+	*/
+	
 	// Execute on both client and server
 	[RplRpc(RplChannel.Reliable, RplRcver.Broadcast)]
 	protected void RPC_RegisterPlayable(PS_PlayableContainer container)
@@ -586,7 +590,7 @@ class PS_PlayableManager : ScriptComponent
 		Rpc(RPC_SetPlayerState, playerId, state);
 		
 		// Try start counter
-		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.GetInstance();
 		SCR_EGameModeState gameModeState = gameModeCoop.GetState();
 		if (gameModeState == SCR_EGameModeState.SLOTSELECTION)
 		{

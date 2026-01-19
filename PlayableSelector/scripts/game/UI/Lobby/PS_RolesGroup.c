@@ -64,7 +64,7 @@ class PS_RolesGroup : SCR_ScriptedWidgetComponent
 			return;
 		
 		// Cache global
-		m_GameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		m_GameModeCoop = PS_GameModeCoop.GetInstance();
 		m_PlayableManager = PS_PlayableManager.GetInstance();
 		m_wWorkspaceWidget = GetGame().GetWorkspace();
 		m_PlayerController = GetGame().GetPlayerController();
@@ -306,7 +306,7 @@ class PS_RolesGroup : SCR_ScriptedWidgetComponent
 		m_bInnerButtonClicked = true;
 		SCR_EGameModeState gameState = m_GameModeCoop.GetState();
 		if (gameState == SCR_EGameModeState.SLOTSELECTION)
-			m_PlayableControllerComponent.MoveToVoNRoom(m_iCurrentPlayerId, m_sFactionKey, m_sGroupCallsign);
+			m_PlayableControllerComponent.AskMoveVoNRoom(EVoNRoomType.GROUP);
 	}
 	
 	// --------------------------------------------------------------------------------------------------------------------------------

@@ -9,7 +9,7 @@ class PS_PolyZoneEffectFreezeZone : PS_PolyZoneEffect
 	
 	override void OnFrame(PS_PolyZoneEffectHandler handler, IEntity ent, float timeSlice)
 	{
-		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.GetInstance();
 		if (gameModeCoop.IsFreezeTimeEnd())
 		{
 			handler.RemoveByEffect(this);

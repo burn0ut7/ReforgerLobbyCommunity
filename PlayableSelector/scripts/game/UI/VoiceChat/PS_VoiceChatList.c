@@ -3,11 +3,12 @@
 
 class PS_VoiceChatList : SCR_ScriptedWidgetComponent
 {
-	// consts
 	/*
+	// consts
+	
 	protected const ResourceName m_sPlayerVoiceSelectorPrefab = "{086F282C8CE692F1}UI/VoiceChat/VoicePlayerSelector.layout";
 	protected const ResourceName m_sVoiceRoomHeaderPrefab = "{C976E42779159507}UI/VoiceChat/VoiceRoomHeader.layout";
-	*/
+	
 	
 	[Attribute("{E705A59E59B577F2}UI/VoiceChat/VoiceChatRoom.layout")]
 	protected ResourceName m_sVoiceChatRoomPrefab;
@@ -15,7 +16,6 @@ class PS_VoiceChatList : SCR_ScriptedWidgetComponent
 	// Global cached
 	protected PlayerManager m_gPlayerManager;
 	protected PS_PlayableManager m_gPlayableManager;
-	protected PS_VoNRoomsManager m_gVoNRoomsManager;
 	protected PlayerController m_pPlayerController;
 	protected int m_iPlayerId;
 	protected int m_iPublicRoomId;
@@ -37,20 +37,20 @@ class PS_VoiceChatList : SCR_ScriptedWidgetComponent
 		// global
 		m_gPlayerManager   = GetGame().GetPlayerManager();
 		m_gPlayableManager = PS_PlayableManager.GetInstance();
-		m_gVoNRoomsManager = PS_VoNRoomsManager.GetInstance();
+		//m_gVoNRoomsManager = PS_VoNRoomsManager.GetInstance();
 		
 		// local
 		m_wRoomsList = VerticalLayoutWidget.Cast(w.FindAnyWidget("RoomsList"));
 		
-		m_gVoNRoomsManager.m_eOnRoomChanged.Insert(MovePlayer);
+		//m_gVoNRoomsManager.m_eOnRoomChanged.Insert(MovePlayer);
 		
 		m_pPlayerController = GetGame().GetPlayerController();
 		m_iPlayerId = m_pPlayerController.GetPlayerId();
 		m_sCurrentFactionKey = m_gPlayableManager.GetPlayerFactionKey(m_iPlayerId);
-		m_iPublicRoomId = m_gVoNRoomsManager.GetRoomWithFaction("", "#PS-VoNRoom_Public" + m_iPlayerId.ToString());
+		//m_iPublicRoomId = m_gVoNRoomsManager.GetRoomWithFaction("", "#PS-VoNRoom_Public" + m_iPlayerId.ToString());
 		
-		if (m_gVoNRoomsManager)
-			Rebuild();
+		//if (m_gVoNRoomsManager)
+		//	Rebuild();
 		
 		GetGame().GetCallqueue().CallLater(UpdateInfo, 100, true);
 	}
@@ -59,13 +59,14 @@ class PS_VoiceChatList : SCR_ScriptedWidgetComponent
 	{
 		if (!GetGame().InPlayMode())
 			return;
-		
+	
 		if (!m_gVoNRoomsManager)
 			return;
 		if (!m_gVoNRoomsManager.m_eOnRoomChanged)
 			return;
 		
 		m_gVoNRoomsManager.m_eOnRoomChanged.Remove(MovePlayer);
+		
 	}
 	
 	private int m_iOldPlayersCount = 0;
@@ -95,20 +96,20 @@ class PS_VoiceChatList : SCR_ScriptedWidgetComponent
 	
 	void CreateRoomIfNeed(int roomId)
 	{
-		if (m_gVoNRoomsManager.IsPublicRoom(roomId))
-			CreateRoom(roomId);
+		//if (m_gVoNRoomsManager.IsPublicRoom(roomId))
+		//	CreateRoom(roomId);
 	}
 	
 	void CreateRoom(int roomId)
 	{
-		VoNRoomKey roomKey = m_gVoNRoomsManager.GetRoomName(roomId);
-		if (roomKey == "") return;
+		//VoNRoomKey roomKey = m_gVoNRoomsManager.GetRoomName(roomId);
+		//if (roomKey == "") return;
 		Widget roomWidget = GetGame().GetWorkspace().CreateWidgets(m_sVoiceChatRoomPrefab);
 		PS_VoiceChatRoom voiceChatRoom = PS_VoiceChatRoom.Cast(roomWidget.FindHandler(PS_VoiceChatRoom));
 		voiceChatRoom.SetRoomId(roomId);
 		
 		array<int> playersInRoom = new array<int>();
-		m_gVoNRoomsManager.GetPlayersInRoom(playersInRoom, roomId);
+		//m_gVoNRoomsManager.GetPlayersInRoom(playersInRoom, roomId);
 		foreach (int playerId : playersInRoom)
 		{
 			voiceChatRoom.AddPlayer(playerId);
@@ -120,6 +121,7 @@ class PS_VoiceChatList : SCR_ScriptedWidgetComponent
 	
 	void RemoveRoomIfNeed(int roomId)
 	{
+		
 		if (m_gVoNRoomsManager.IsGlobalRoom(roomId)) return;
 		if (m_gVoNRoomsManager.IsLocalRoom(roomId)) return;
 		
@@ -139,6 +141,7 @@ class PS_VoiceChatList : SCR_ScriptedWidgetComponent
 				RemoveRoom(roomId);
 			}
 		}
+		
 	}
 	
 	void RemoveRoom(int roomId)
@@ -197,7 +200,7 @@ class PS_VoiceChatList : SCR_ScriptedWidgetComponent
 	void GetVisibleRooms(out array<int> outRoomsArray)
 	{
 		// global
-		PS_GameModeCoop gameMode = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameMode = PS_GameModeCoop.GetInstance();
 		PlayerManager playerManager = GetGame().GetPlayerManager();
 		PS_PlayableManager playableManager = PS_PlayableManager.GetInstance();
 		PS_VoNRoomsManager VoNRoomsManager = PS_VoNRoomsManager.GetInstance();
@@ -308,7 +311,8 @@ class PS_VoiceChatList : SCR_ScriptedWidgetComponent
 			room.SetSelectedPlayer(playerId);
 		}
 	}
-};
+	*/
+}
 
 
 

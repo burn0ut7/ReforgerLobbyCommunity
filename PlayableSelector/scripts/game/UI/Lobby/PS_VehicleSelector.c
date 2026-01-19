@@ -36,7 +36,7 @@ class PS_VehicleSelector : SCR_ButtonComponent
 		super.HandlerAttached(w);
 		
 		// Cache global
-		m_GameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		m_GameModeCoop = PS_GameModeCoop.GetInstance();
 		m_PlayableManager = PS_PlayableManager.GetInstance();
 		m_PlayerController = GetGame().GetPlayerController();
 		m_iCurrentPlayerId = m_PlayerController.GetPlayerId();

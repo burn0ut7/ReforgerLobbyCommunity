@@ -162,8 +162,6 @@ class PS_GameModeCoop : SCR_BaseGameMode
 		*/
 		if (Replication.IsServer())
 		{
-			PS_VoNRoomsManager.GetInstance().GetOrCreateRoomWithFaction("", "#PS-VoNRoom_Global");
-
 			m_fCurrentFreezeTime = m_iReconnectTime;
 			Replication.BumpMe();
 		}
@@ -726,11 +724,10 @@ class PS_GameModeCoop : SCR_BaseGameMode
 			return;
 		#endif
 
-		PS_VoNRoomsManager VoNRoomsManager = PS_VoNRoomsManager.GetInstance();
 		Resource resource = Resource.Load("{ADDE38E4119816AB}Prefabs/InitialPlayer_Version2.et");
 		EntitySpawnParams params = new EntitySpawnParams();
 		GetTransform(params.Transform);
-		vector position = Vector(0, 100000, 0) + Vector(1000 * Math.Mod(playerId, 10), 5000 * Math.Floor(Math.Mod(playerId, 100) / 10), 5000 * Math.Floor(playerId / 100));
+		vector position = Vector(0, 3000, 0);
 		params.Transform[3] = position;
 		IEntity initialEntity = GetGame().SpawnEntityPrefab(resource, GetGame().GetWorld(), params);
 		PlayerManager playerManager = GetGame().GetPlayerManager();
@@ -738,7 +735,6 @@ class PS_GameModeCoop : SCR_BaseGameMode
 		PS_PlayableControllerComponent playableController = PS_PlayableControllerComponent.Cast(playerController.FindComponent(PS_PlayableControllerComponent));
 		playableController.SetInitialEntity(initialEntity);
 		playerController.SetInitialMainEntity(initialEntity);
-		VoNRoomsManager.RestoreRoom(playerId);
 	}
 
 	void TryRespawn(RplId playableId, int playerId)
@@ -841,11 +837,10 @@ class PS_GameModeCoop : SCR_BaseGameMode
 	{
 		super.OnGameStateChanged();
 
-		PS_VoNRoomsManager VoNRoomsManager = PS_VoNRoomsManager.GetInstance();
 		PS_PlayableManager playableManager = PS_PlayableManager.GetInstance();
 		array<int> playerIds = new array<int>();
 		GetGame().GetPlayerManager().GetPlayers(playerIds);
-
+		/*
 		SCR_EGameModeState state = GetState();
 		m_OnGameStateChange.Invoke(state);
 		switch (state)
@@ -872,6 +867,7 @@ class PS_GameModeCoop : SCR_BaseGameMode
 					playableManager.HolsterWeapons();
 				break;
 		}
+		*/
 	}
 
 	// Switch to next game state
@@ -1013,6 +1009,18 @@ class PS_GameModeCoop : SCR_BaseGameMode
 	PS_FreezeTimeCounter m_hFreezeTimeCounter;
 
 	// ------------------------------------------ Global flags ------------------------------------------
+
+	void MoveVoNRoom(EVoNRoomType roomType, int playerId)
+	{
+		Rpc(RPC_MoveVoNRoom, roomType, playerId);
+	}
+	
+	[RplRpc(RplChannel.Reliable, RplRcver.Broadcast)]
+	protected void RPC_MoveVoNRoom(EVoNRoomType roomType)
+	{
+		//m_eOnRoomChanged.Invoke(playerId, roomId);
+	}
+	
 	bool IsFreezeTimeEnd()
 	{
 		return m_fCurrentFreezeTime <= 0;
@@ -1108,6 +1116,11 @@ class PS_GameModeCoop : SCR_BaseGameMode
 	}
 
 	// ------------------------------------------ Global variables ------------------------------------------
+	static PS_GameModeCoop GetInstance()
+	{
+		return PS_GameModeCoop.GetInstance();
+	}
+	
 	int GetFreezeTime()
 	{
 		return m_iFreezeTime;

@@ -3,7 +3,7 @@ modded class SCR_MapRadialUI
 {
 	override protected void OnInputMenuOpen(float value, EActionTrigger reason)
 	{
-		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.GetInstance();
 		if (gameModeCoop && gameModeCoop.GetMarkersOnlyOnBriefing())
 			return;
 		if (m_RadialMenu && m_RadialMenu.IsOpened())

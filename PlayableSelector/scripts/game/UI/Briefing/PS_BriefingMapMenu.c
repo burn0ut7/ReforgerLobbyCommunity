@@ -55,7 +55,7 @@ class PS_BriefingMapMenu: ChimeraMenuBase
 		m_hMissionDescription = PS_MissionDescriptionUI.Cast(m_wGameModeHeader.FindHandler(PS_MissionDescriptionUI));
 		
 		m_wSteps = GetRootWidget().FindAnyWidget("StepsFrame");
-		PS_GameModeCoop gameMode = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameMode = PS_GameModeCoop.GetInstance();
 		//m_wSteps.SetVisible(gameMode.GetState() == SCR_EGameModeState.BRIEFING);
 		
 		PlayerController playerController = GetGame().GetPlayerController();
@@ -132,12 +132,12 @@ class PS_BriefingMapMenu: ChimeraMenuBase
 		int currentPlayerId = currentPlayerController.GetPlayerId();
 		FactionKey factionKey = playableManager.GetPlayerFactionKey(currentPlayerId);
 		PS_PlayableControllerComponent playableControllerComponent = PS_PlayableControllerComponent.Cast(currentPlayerController.FindComponent(PS_PlayableControllerComponent));
-			
+		/*
 		if (m_hVoiceChatList.GetFactionKey() != factionKey)
 			playableControllerComponent.SwitchToMenu(SCR_EGameModeState.BRIEFING);
 		
 		// Update playable marker
-		/*
+		
 		if (m_hPlayableMarkerComponent)
 		{
 			
@@ -215,13 +215,15 @@ class PS_BriefingMapMenu: ChimeraMenuBase
 	{
 		PlayerController playerController = GetGame().GetPlayerController();
 		PS_PlayableControllerComponent playableController = PS_PlayableControllerComponent.Cast(playerController.FindComponent(PS_PlayableControllerComponent));
-		playableController.LobbyVoNEnable();
+		//playableController.LobbyVoNEnable();
+		playableController.EnableChannel(EChannelType.PRIMARY);
 	}
 	void Action_LobbyVoNOff()
 	{
 		PlayerController playerController = GetGame().GetPlayerController();
 		PS_PlayableControllerComponent playableController = PS_PlayableControllerComponent.Cast(playerController.FindComponent(PS_PlayableControllerComponent));
-		playableController.LobbyVoNDisable();
+		//playableController.LobbyVoNDisable();
+		playableController.EnableChannel(EChannelType.SECONDARY);
 	}
 	// Channel
 	void Action_LobbyVoNChannelOn()

@@ -1,30 +1,13 @@
 //------------------------------------------------------------------------------------------------
+/*
 [ComponentEditorProps(category: "GameScripted/GameMode/Components", description: "", color: "0 0 255 255", icon: HYBRID_COMPONENT_ICON)]
 class PS_VoNRoomsManagerClass: ScriptComponentClass
 {
 	
 };
 
-// just string but funnier 
-// struct: [FactionKey + "|"] + string
-typedef string VoNRoomKey;
-
-// Manage VoN "Rooms"
-// Flying wallles rooms for naked VoN bois.
-
 class PS_VoNRoomsManager : ScriptComponent
 {
-	// server data
-	ref map<int, vector> m_mRoomOffsets = new map<int, vector>(); // offset from initial position for each room
-	ref map<VoNRoomKey, int> m_mVoiceRoomsFromName = new map<VoNRoomKey, int>(); // room key to roomId relationship
-	
-	// Replication data
-	ref map<int, VoNRoomKey> m_mVoiceRooms = new map<int, VoNRoomKey>(); // room names for UI
-	ref map<int, int> m_mPlayersRooms = new map<int, int>(); // player to room relationship
-	
-	// Move speech bois to space
-	static vector roomInitialPosition = "-1 1000000 1";
-	
 	// offset every room
 	vector lastOffset;
 	int m_iLastRoomId = 1;
@@ -86,7 +69,7 @@ class PS_VoNRoomsManager : ScriptComponent
 		// Get global stuff
 		PlayerManager playerManager = GetGame().GetPlayerManager();
 		PS_PlayableManager playableManager = PS_PlayableManager.GetInstance();
-		PS_GameModeCoop gameMode = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameMode = PS_GameModeCoop.GetInstance();
 		PlayerController playerController = playerManager.GetPlayerController(playerId);
 		
 		if (playerController)
@@ -326,3 +309,4 @@ class PS_VoNRoomsManager : ScriptComponent
 		return true;
 	}
 };
+*/

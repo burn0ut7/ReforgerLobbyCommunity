@@ -22,7 +22,7 @@ modded class Vehicle
 	
 	void Freeze()
 	{
-		PS_GameModeCoop gameMode = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameMode = PS_GameModeCoop.GetInstance();
 		if (!gameMode || ((gameMode.GetState() == SCR_EGameModeState.GAME && gameMode.IsFreezeTimeEnd()) || !gameMode.IsFreezeTimeShootingForbiden()))
 		{
 			GetGame().GetCallqueue().Remove(Freeze);

@@ -36,7 +36,7 @@ class PS_SpectatorLabelIconCharacter : PS_SpectatorLabelIcon
 		
 		
 		m_LabelEventHandler = PS_EventHandlerComponent.Cast(m_wLabelButton.FindHandler(PS_EventHandlerComponent));
-		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.GetInstance();
 		if (gameModeCoop && gameModeCoop.GetFriendliesSpectatorOnly())
 		{
 			return;

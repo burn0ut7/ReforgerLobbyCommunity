@@ -26,7 +26,7 @@ class PS_GameModeHeaderButton : SCR_ButtonBaseComponent
 	
 	void Update()
 	{
-		PS_GameModeCoop gameMode = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameMode = PS_GameModeCoop.GetInstance();
 		
 		if (m_eState == gameMode.GetState()) 
 		{

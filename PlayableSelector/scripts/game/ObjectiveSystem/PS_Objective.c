@@ -30,7 +30,7 @@ class PS_Objective : PS_MissionDescription
 	{
 		super.EOnInit(owner);
 		m_RplComponent = RplComponent.Cast(owner.FindComponent(RplComponent));
-		m_GameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		m_GameModeCoop = PS_GameModeCoop.GetInstance();
 	}
 	
 	// Set

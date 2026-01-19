@@ -30,7 +30,7 @@ class PS_PlayersList : ScriptedWidgetComponent
 		m_wPlayersList = VerticalLayoutWidget.Cast(w.FindAnyWidget("PlayersList"));
 		
 		// Cache global
-		m_GameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		m_GameModeCoop = PS_GameModeCoop.GetInstance();
 		m_PlayableManager = PS_PlayableManager.GetInstance();
 		m_PlayerController = GetGame().GetPlayerController();
 		m_FactionManager = SCR_FactionManager.Cast(GetGame().GetFactionManager());

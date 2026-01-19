@@ -149,7 +149,7 @@ class PS_GameModeHeader : ScriptedWidgetComponent
 	
 	ButtonWidget GetCurrentGameModeButton()
 	{
-		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.GetInstance();
 		SCR_EGameModeState gameModeState = gameModeCoop.GetState();
 		switch (gameModeState)
 		{

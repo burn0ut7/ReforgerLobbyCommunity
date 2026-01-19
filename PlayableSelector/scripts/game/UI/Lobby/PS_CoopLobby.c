@@ -105,7 +105,7 @@ class PS_CoopLobby : MenuBase
 		
 		// Cache global
 		m_InputManager = GetGame().GetInputManager();
-		m_GameModeCoop = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		m_GameModeCoop = PS_GameModeCoop.GetInstance();
 		m_PlayableManager = PS_PlayableManager.GetInstance();
 		m_PlayerManager = GetGame().GetPlayerManager();
 		m_PlayerController = GetGame().GetPlayerController();
@@ -161,7 +161,7 @@ class PS_CoopLobby : MenuBase
 		
 		FactionKey factionKey = m_PlayableManager.GetPlayerFactionKey(m_iPlayerId);
 		m_CurrentFaction = SCR_Faction.Cast(m_FactionManager.GetFactionByKey(factionKey));
-		m_VoiceChatList.SwitchFaction(factionKey);
+		//m_VoiceChatList.SwitchFaction(factionKey);
 		
 		// Buttons
 		m_PreviewHideButtonComponent.m_OnClicked.Insert(OnClickedPreviewHide);
@@ -524,9 +524,8 @@ class PS_CoopLobby : MenuBase
 	
 	void SwitchVoiceChatFaction(FactionKey factionKey)
 	{
-		m_VoiceChatList.SwitchFaction(factionKey);
+		//m_VoiceChatList.SwitchFaction(factionKey);
 	}
-	
 	
 	void OnPlayerConnected(int playerId)
 	{
@@ -556,7 +555,7 @@ class PS_CoopLobby : MenuBase
 	{
 		m_iSelectedPlayer = playerId;
 		m_PlayersList.SetSelectedPlayer(playerId);
-		m_VoiceChatList.SetSelectedPlayer(playerId);
+		//m_VoiceChatList.SetSelectedPlayer(playerId);
 	}
 	
 	// --------------------------------------------------------------------------------------------------------------------------------
@@ -586,7 +585,7 @@ class PS_CoopLobby : MenuBase
 	// Direct
 	void Action_LobbyVoNOn()
 	{
-		m_PlayableControllerComponent.LobbyVoNEnable();
+		m_PlayableControllerComponent.EnableChannel(EChannelType.PRIMARY)
 	}
 	void Action_LobbyVoNOff()
 	{
@@ -595,7 +594,7 @@ class PS_CoopLobby : MenuBase
 	// Channel
 	void Action_LobbyVoNChannelOn()
 	{
-		m_PlayableControllerComponent.LobbyVoNRadioEnable();
+		m_PlayableControllerComponent.EnableChannel(EChannelType.SECONDARY)
 	}
 	void Action_LobbyVoNChannelOff()
 	{
@@ -618,7 +617,7 @@ class PS_CoopLobby : MenuBase
 		//GameStateTransitions.RequestGameplayEndTransition();  
 		//Close();
 		
-		PS_GameModeCoop gameMode = PS_GameModeCoop.Cast(GetGame().GetGameMode());
+		PS_GameModeCoop gameMode = PS_GameModeCoop.GetInstance();
 		SCR_EGameModeState gameModeState = gameMode.GetState();
 		if (gameModeState == SCR_EGameModeState.GAME)
 		{

@@ -5,11 +5,23 @@ GenericEntity : "{5879D8E9C56E358D}Prefabs/Items/Core/Radio_base.et" {
    "Encryption key" "Menu"
    "Turned on" 1
    Transceivers {
-    RadioTransceiver "{5EB53DCA71704D99}" {
-     ChannelFrequency 32000
+    RadioTransceiver "{6867241194D2450B}" {
+     ChannelFrequency -2
      "Transmitting Range" 100000
-     "Min tunable frequency" 32000
-     "Max tunable frequency" 68000
+     "Min tunable frequency" -999999999
+     "Max tunable frequency" 999999999
+    }
+    RadioTransceiver "{68672418E682F892}" {
+     ChannelFrequency -1
+     "Transmitting Range" 100000
+     "Min tunable frequency" -999999999
+     "Max tunable frequency" 999999999
+    }
+    RadioTransceiver "{68672418EB299C32}" {
+     ChannelFrequency -1
+     "Transmitting Range" 100000
+     "Min tunable frequency" -999999999
+     "Max tunable frequency" 999999999
     }
    }
   }
@@ -105,7 +117,7 @@ GenericEntity : "{5879D8E9C56E358D}Prefabs/Items/Core/Radio_base.et" {
     }
    }
    additionalActions {
-    SCR_EquipGadgetAction "{553AEBE8F3B60801}" : "{068D8D646964D12A}Prefabs/Characters/Core/Actions/EquipGadgetAction.conf" {
+    SCR_EquipItemAction "{553AEBE8F3B60801}" : "{068D8D646964D12A}Prefabs/Characters/Core/Actions/EquipGadgetAction.conf" {
     }
     SCR_RadioTuningUserAction "{5EB53DCA71704DCB}" {
      ParentContextList {
