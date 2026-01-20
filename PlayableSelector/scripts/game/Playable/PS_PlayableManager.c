@@ -559,15 +559,6 @@ class PS_PlayableManager : ScriptComponent
 		SCR_PlayerFactionAffiliationComponent playerFactionAffiliation = SCR_PlayerFactionAffiliationComponent.Cast(playerController.FindComponent(SCR_PlayerFactionAffiliationComponent));
 		playerFactionAffiliation.SetAffiliatedFactionByKey(factionKey);
 		factionManager.UpdatePlayerFaction_S(playerFactionAffiliation);
-		
-		//Set right map tools
-		SCR_Faction faction = SCR_Faction.Cast(factionManager.GetFactionByKey(factionKey));
-		if(!faction)
-			return;
-		
-		PS_PlayableControllerComponent playable = PS_PlayableControllerComponent.Cast(playerController.FindComponent(PS_PlayableControllerComponent));
-
-		playable.SetMap(faction.GetMapPrefab());
 	}
 	[RplRpc(RplChannel.Reliable, RplRcver.Broadcast)]
 	protected protected void RPC_SetPlayerFactionKey(int playerId, FactionKey factionKey)

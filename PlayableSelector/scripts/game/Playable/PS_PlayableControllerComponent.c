@@ -971,50 +971,6 @@ class PS_PlayableControllerComponent : ScriptComponent
 	}
 
 	// -------------------- Set ---------------------
-	void SetMap(ResourceName mapPrefab)
-	{
-		if (!m_InitialEntity)
-			return;
-		
-		SCR_InventoryStorageManagerComponent inventory = SCR_InventoryStorageManagerComponent.Cast(m_InitialEntity.FindComponent(SCR_InventoryStorageManagerComponent));
-		if (!inventory)
-			return;
-
-		SCR_EquipmentStorageComponent equipment = SCR_EquipmentStorageComponent.Cast(m_InitialEntity.FindComponent(SCR_EquipmentStorageComponent));
-		if (!equipment)
-			return;
-		
-		InventoryStorageSlot mapSlot;
-		int slotId = -1;
-		for (int i, count = equipment.GetSlotsCount(); i < count; i++)
-		{
-			InventoryStorageSlot slot = equipment.GetSlot(i);
-	
-			if(slot.GetSourceName() != "MapSlot")
-				continue;
-			
-			mapSlot = slot;
-			slotId = i;
-			break;
-		}
-		
-		if(slotId != -1)
-		{
-			IEntity mapEntity = equipment.Get(slotId);
-			inventory.TryDeleteItem(mapEntity);
-		}
-		else
-		{
-			slotId = 2;
-		}
-
-		//InventoryItemComponent item = slot.GetOwner();
-		//mapPrefab
-	
-		inventory.TrySpawnPrefabToStorage(mapPrefab, equipment, slotId);
-		Print("GRAY | TrySpawnPrefabToStorage");
-	}
-	
 	void SetPlayerState(int playerId, PS_EPlayableControllerState state)
 	{
 		Rpc(RPC_SetPlayerState, playerId, state)
