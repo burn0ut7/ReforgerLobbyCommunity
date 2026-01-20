@@ -853,6 +853,9 @@ class PS_PlayableControllerComponent : ScriptComponent
 		if (gameMode.GetFriendliesSpectatorOnly())
 			PS_ManualCameraSpectator.Cast(m_Camera).SetCharacterEntityMove(from);
 		
+		SCR_ScreenEffectsManager effects = SCR_ScreenEffectsManager.GetScreenEffectsDisplay();
+		effects.ManagerClearEffects();
+		
 		m_isSpectating = true;
 	}
 
