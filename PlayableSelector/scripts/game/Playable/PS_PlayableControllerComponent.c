@@ -1271,6 +1271,11 @@ class PS_PlayableControllerComponent : ScriptComponent
 	{
 		PS_GameModeCoop gamemode = PS_GameModeCoop.GetInstance();
 		
+		PS_PlayableManager playableManager = PS_PlayableManager.GetInstance();
+		int currentPlayerId = playableManager.GetPlayerByPlayable(playableId);
+		if(currentPlayerId != -1)
+			return;
+		
 		bool canJoin = gamemode.CanJoinFaction(toFaction, currentFaction);
 		
 		if(canJoin)
@@ -1284,7 +1289,6 @@ class PS_PlayableControllerComponent : ScriptComponent
 			//RPC_SlotFailed();
 		}
 		
-		PS_PlayableManager playableManager = PS_PlayableManager.GetInstance();
 		playableManager.SetPlayerPlayable(playerId, playableId);
 	}	
 	
