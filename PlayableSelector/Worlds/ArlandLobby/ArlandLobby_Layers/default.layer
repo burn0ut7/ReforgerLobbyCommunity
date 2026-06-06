@@ -149,6 +149,9 @@ PS_GameModeCoop PS_GameMode_Lobby1 : "{9C2001FE7A2F2281}Prefabs/MP/Modes/PS_Game
     }
    }
   }
+  SCR_ReconnectComponent "{5A02809D5E8ABE42}" {
+   Enabled 0
+  }
   SCR_RespawnSystemComponent "{56B2B4793051E7C9}" {
    components {
     SCR_FreeSpawnHandlerComponent "{5CD2860C681CE021}" {
@@ -384,9 +387,6 @@ PS_GameModeCoop PS_GameMode_Lobby1 : "{9C2001FE7A2F2281}Prefabs/MP/Modes/PS_Game
   RplComponent "{56B2B4793BF2E1B4}" {
    "Rpl State Override" None
    Streamable Disabled
-  }
-  SCR_ReconnectComponent "{5A02809D5E8ABE42}" {
-   Enabled 0
   }
  }
  m_bTeamSwitch 1

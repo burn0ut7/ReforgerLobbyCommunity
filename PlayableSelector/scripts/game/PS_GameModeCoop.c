@@ -1281,7 +1281,9 @@ class PS_GameModeCoop : SCR_BaseGameMode
 
 	bool IsSpectatorLocalVoiceEnable()
 	{
-		return m_bEnableSpectatorLocalVoice;
+		return false;
+		
+		//return m_bEnableSpectatorLocalVoice;
 	}
 	
 	bool GetDisablePlayablesStreaming()
