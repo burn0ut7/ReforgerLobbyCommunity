@@ -105,5 +105,6 @@ SCR_ChimeraCharacter : "{37578B1666981FCE}Prefabs/Characters/Core/Character_Base
    AnimInstance "{B086D0CD3B9E3AB0}anims/workspaces/player/player_PS_VON.asi"
   }
  }
+ Flags 0 0x1
  coords 0 0 0
 }
