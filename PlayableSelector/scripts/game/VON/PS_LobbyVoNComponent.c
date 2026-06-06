@@ -60,11 +60,12 @@ class PS_LobbyVoNComponent : VoNComponent
 	
 	void PS_LobbyVoNComponent(IEntityComponentSource src, IEntity ent, IEntity parent)
 	{
-		GetGame().GetCallqueue().CallLater(DisablePhysicForOwner, 1, false, ent);
+		GetGame().GetCallqueue().CallLater(DisablePhysic, 1, false, ent);
+		GetGame().GetCallqueue().CallLater(ToggleInvisible, 1, false, ent);
 		SetActive(ent);
 	}
 	
-	void DisablePhysicForOwner(IEntity owner)
+	void DisablePhysic(IEntity owner)
 	{
 		Physics physics = owner.GetPhysics();
 		if (physics)
@@ -79,6 +80,11 @@ class PS_LobbyVoNComponent : VoNComponent
 			physics.SetInteractionLayer(EPhysicsLayerDefs.Unused);
 		}
 	}
+	
+	void ToggleInvisible(IEntity owner)
+    {
+        owner.ClearFlags(EntityFlags.VISIBLE, false);
+    }
 	
 	void SetActive(IEntity owner)
 	{
