@@ -98,8 +98,13 @@ SCR_ChimeraCharacter : "{37578B1666981FCE}Prefabs/Characters/Core/Character_Base
   SCR_VoNComponent "{520EA1D2F659C856}" {
    Enabled 0
   }
-  RHS_ThermalSlotManagerComponent "{60D6F4C7C990A7BB}" {
-   Enabled 0
+  SCR_CharacterIdentityComponent "{5584CBC63E092DBC}" {
+   Identity Identity "{5584CBC6363C648B}" {
+    VisualIdentity VisualIdentity "{56E6D9456009D1C4}" {
+     Head "{2FC2A1CE68435471}Prefabs/Characters/Heads/Head_Invisible.et"
+     Body "{51A3C18E0AF9A0B0}Prefabs/Characters/Basebody/CharacterBasebodyInvisible.et"
+    }
+   }
   }
   CharacterAnimationComponent "{520EA1D2F659C994}" {
    AnimInstance "{B086D0CD3B9E3AB0}anims/workspaces/player/player_PS_VON.asi"

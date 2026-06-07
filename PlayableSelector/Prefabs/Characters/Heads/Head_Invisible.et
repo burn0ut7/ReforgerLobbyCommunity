@@ -1,0 +1,101 @@
+GameEntity : "{24644218743CDFBD}Prefabs/Characters/Heads/Head_White_09.et" {
+ ID "529C89342C390093"
+ components {
+  MeshObject "{529C8934211B4893}" {
+   Materials {
+    MaterialAssignClass "{698F0CE6453A26E4}" {
+     SourceMaterial "Eye"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A26FC}" {
+     SourceMaterial "Eye_Occlusion"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A26FF}" {
+     SourceMaterial "Eye_Occlusion_wound"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A2701}" {
+     SourceMaterial "Eye_Reflection"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A2703}" {
+     SourceMaterial "Eye_Reflection_wound"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A2706}" {
+     SourceMaterial "Eye_Water"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A2708}" {
+     SourceMaterial "Eye_Water_wound"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A270A}" {
+     SourceMaterial "Eye_wound"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A270C}" {
+     SourceMaterial "Eyelashes"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A270E}" {
+     SourceMaterial "Head_White_09"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A2712}" {
+     SourceMaterial "Head_White_09_wound"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A2714}" {
+     SourceMaterial "Neck"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A2715}" {
+     SourceMaterial "Neck_wound"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A271B}" {
+     SourceMaterial "default_black"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A271D}" {
+     SourceMaterial "Eye_318345CB23625A3E"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A271F}" {
+     SourceMaterial "Eye_Occlusion_71C91F46F112B15C"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A2722}" {
+     SourceMaterial "Eye_Water_26A975AF0AD1C7F9"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A2724}" {
+     SourceMaterial "Eye_reflection"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A2726}" {
+     SourceMaterial "Eye_reflection_wound"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A2728}" {
+     SourceMaterial "Eyelashes_097EBC0C005870FD"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A272B}" {
+     SourceMaterial "Eyelashes_wound"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A272D}" {
+     SourceMaterial "Head_White_10"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+    MaterialAssignClass "{698F0CE6453A272F}" {
+     SourceMaterial "Head_White_10_wound"
+     AssignedMaterial "{9668A21511C6F791}Assets/_SharedData/Decals/Invisible_Material.emat"
+    }
+   }
+  }
+ }
+}
