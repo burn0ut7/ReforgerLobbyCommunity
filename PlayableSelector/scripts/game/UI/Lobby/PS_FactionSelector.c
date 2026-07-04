@@ -120,19 +120,13 @@ class PS_FactionSelector : SCR_ButtonBaseComponent
 			return;
 		}
 	
-		int displayMax = availableSlots;
-		bool enforceRatio = false;
+		int ratioMax = Math.Min(m_iRatioCount, availableSlots);;
 	
+		string counterText;
 		if (m_GameModeCoop && m_GameModeCoop.IsEnforceRatioEnabled())
-		{
-			enforceRatio = true;
-			displayMax = Math.Min(m_iRatioCount, availableSlots);
-		}
-	
-		string counterText = m_iCount.ToString() + " / " + displayMax.ToString();
-	
-		if (enforceRatio)
-			counterText += " (" + availableSlots.ToString() + ")";
+			counterText = m_iCount.ToString() + " / " + ratioMax.ToString() + " / " + availableSlots.ToString();
+		else
+			counterText = m_iCount.ToString() + " / " + availableSlots.ToString();
 	
 		m_wFactionCounter.SetText(counterText);
 	}
