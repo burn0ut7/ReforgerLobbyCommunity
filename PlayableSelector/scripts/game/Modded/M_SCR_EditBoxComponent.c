@@ -4,6 +4,8 @@ modded class SCR_EditBoxComponent
     {
         if (!m_wEditBox)
             return false;
+        if (!GetGame().GetInputManager().IsUsingMouseAndKeyboard())
+            return false;
         int userID = m_wEditBox.GetUserID();
         return userID == 1000 || userID == 1001;
     }
