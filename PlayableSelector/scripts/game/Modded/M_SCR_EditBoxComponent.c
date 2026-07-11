@@ -26,23 +26,9 @@ modded class SCR_EditBoxComponent
 
     override void UpdateInteractionState(bool forceDisabled)
     {
-        if (PS_IsMarkerEditBox() && !forceDisabled)
-        {
-            // Native widget may have exited write mode when focus shifted — re-arm it
-            if (m_wEditBoxWidget && !m_wEditBoxWidget.IsInWriteMode())
-                ActivateWriteMode(true);
-
-            // Still track text changes
-            string currentText = GetEditBoxText();
-            if (currentText != m_sTextPrevious)
-            {
-                m_sTextPrevious = currentText;
-                m_OnTextChange.Invoke(m_sTextPrevious);
-            }
-
-            return;
-        }
-
+        // Re-arm native write mode before super polls it, so super sees no state change
+        if (PS_IsMarkerEditBox() && !forceDisabled && m_wEditBoxWidget && !m_wEditBoxWidget.IsInWriteMode())
+            ActivateWriteMode(true);
         super.UpdateInteractionState(forceDisabled);
     }
 }
