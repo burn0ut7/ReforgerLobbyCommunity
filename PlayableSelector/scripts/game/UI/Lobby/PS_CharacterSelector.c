@@ -477,7 +477,7 @@ class PS_CharacterSelector : SCR_ButtonComponent
 				return;
 			}
 			
-			m_PlayableControllerComponent.AskCanJoinSlot(playerId, m_sFactionKey, m_PlayableManager.GetPlayerFactionKey(m_iCurrentPlayerId), m_iPlayableId, m_sPlayableCallsign);
+			m_PlayableControllerComponent.AskCanJoinSlot(playerId, m_sFactionKey, m_iPlayableId, m_sPlayableCallsign);
 		} else {
 			SCR_UISoundEntity.SoundEvent("SOUND_HUD_GADGET_SELECT");
 			m_PlayableControllerComponent.ChangeFactionKey(playerId, "");

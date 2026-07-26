@@ -1254,20 +1254,13 @@ class PS_PlayableControllerComponent : ScriptComponent
 		m_Camera.SetOrigin(position);
 	}
 	
-	//bool CanJoinFaction(FactionKey factionKeyPlayer, FactionKey currentFaction)
-	void AskCanJoinSlot(int playerId, FactionKey toFaction, FactionKey currentFaction, RplId playableId, string callsign)
+	void AskCanJoinSlot(int playerId, FactionKey toFaction, RplId playableId, string callsign)
 	{
-		if(PS_PlayersHelper.IsAdminOrServer())
-		{
-			RPC_DoJoinSlot(playerId, toFaction, currentFaction, playableId, callsign);
-			return;
-		}
-
-		Rpc(RPC_AskCanJoinSlot, playerId, toFaction, currentFaction, playableId, callsign);
+		Rpc(RPC_AskCanJoinSlot, playerId, toFaction, playableId, callsign);
 	}
 	
 	[RplRpc(RplChannel.Reliable, RplRcver.Server)]
-	void RPC_AskCanJoinSlot(int playerId, FactionKey toFaction, FactionKey currentFaction, RplId playableId, string callsign)
+	void RPC_AskCanJoinSlot(int playerId, FactionKey toFaction, RplId playableId, string callsign)
 	{
 		PS_GameModeCoop gamemode = PS_GameModeCoop.GetInstance();
 		
@@ -1276,21 +1269,34 @@ class PS_PlayableControllerComponent : ScriptComponent
 		if(currentPlayerId != -1)
 			return;
 		
-		bool canJoin = gamemode.CanJoinFaction(toFaction, currentFaction);
-		
-		if(canJoin)
-		{
-			Rpc(RPC_DoJoinSlot, playerId, toFaction, currentFaction, playableId, callsign);
-			//RPC_DoJoinSlot(playerId, toFaction, currentFaction, playableId, callsign);
-		}
-		else
+		PlayerController thisPlayerController = PlayerController.Cast(GetOwner());
+		bool isAdmin = SCR_Global.IsAdmin(thisPlayerController.GetPlayerId());
+		if (thisPlayerController.GetPlayerId() != playerId && !isAdmin)
+			return;
+		if (playableManager.GetPlayerPin(playerId) && !isAdmin)
+			return;
+
+		FactionKey currentFactionServer = playableManager.GetPlayerFactionKey(playerId);
+		if (!isAdmin && !gamemode.CanJoinFaction(toFaction, currentFactionServer))
 		{
 			Rpc(RPC_SlotFailed);
-			//RPC_SlotFailed();
+			return;
 		}
-		
+
+		if (gamemode.GetState() == SCR_EGameModeState.BRIEFING)
+		{
+			PS_VoNRoomsManager VoNRoomsManager = PS_VoNRoomsManager.GetInstance();
+			if (!gamemode.m_bPublicCommandBriefing)
+				VoNRoomsManager.MoveToRoom(playerId, toFaction, callsign);
+			else
+				VoNRoomsManager.MoveToRoom(playerId, toFaction, "#PS-VoNRoom_Command");
+		}
+
+		playableManager.SetPlayerFactionKey(playerId, toFaction);
+		playableManager.SetPlayerState(playerId, PS_EPlayableControllerState.NotReady);
 		playableManager.SetPlayerPlayable(playerId, playableId);
-	}	
+		Rpc(RPC_DoJoinSlot, toFaction);
+	}
 	
 	[RplRpc(RplChannel.Reliable, RplRcver.Owner)]
 	void RPC_SlotFailed()
@@ -1303,23 +1309,13 @@ class PS_PlayableControllerComponent : ScriptComponent
 	}
 	
 	[RplRpc(RplChannel.Reliable, RplRcver.Owner)]
-	void RPC_DoJoinSlot(int playerId, FactionKey toFaction, FactionKey currentFaction, RplId playableId, string callsign)
+	void RPC_DoJoinSlot(FactionKey toFaction)
 	{
-		PS_GameModeCoop gamemode = PS_GameModeCoop.GetInstance();
-		SCR_EGameModeState gameState = gamemode.GetState();
-		
 		SCR_UISoundEntity.SoundEvent("SOUND_HUD_GADGET_SELECT");
-		if (gameState == SCR_EGameModeState.BRIEFING)
-		{
-		if (!gamemode.m_bPublicCommandBriefing)
-			MoveToVoNRoom(playerId, toFaction, callsign);
-		else
-			MoveToVoNRoom(playerId, toFaction, "#PS-VoNRoom_Command");
-		}
-		
-		ChangeFactionKey(playerId, toFaction);
-		SetPlayerState(playerId, PS_EPlayableControllerState.NotReady);	
-		SetPlayerPlayable(playerId, playableId);
+		SCR_FactionManager factionManager = SCR_FactionManager.Cast(GetGame().GetFactionManager());
+		SCR_Faction faction = SCR_Faction.Cast(factionManager.GetFactionByKey(toFaction));
+		if (faction)
+			SetMap(faction.GetMapPrefab());
 	}
 	
 	static PS_PlayableControllerComponent GetInstance()
