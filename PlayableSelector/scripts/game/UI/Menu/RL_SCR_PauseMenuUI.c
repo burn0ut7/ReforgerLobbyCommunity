@@ -17,8 +17,8 @@ modded class PauseMenuUI
 		buttonComp.m_OnClicked.Clear();
 		buttonComp.m_OnClicked.Insert(OnRespawn);
 		
-		bool respawnAllowed = (respawnComp && respawnComp.IsPauseMenuRespawnEnabled()) || gameMode.IsInherited(PS_GameModeCoop);
-		buttonComp.GetRootWidget().SetVisible(respawnAllowed && CanRespawn());
+		bool respawnAllowed = (respawnComp && respawnComp.IsPauseMenuRespawnEnabled()) || (gameMode.IsInherited(PS_GameModeCoop) && gameMode.GetState() == SCR_EGameModeState.GAME);
+		buttonComp.SetVisible(respawnAllowed && CanRespawn());
 	}
 	
 	override private void OnRespawn()
