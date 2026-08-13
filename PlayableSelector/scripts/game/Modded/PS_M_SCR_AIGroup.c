@@ -62,19 +62,5 @@ modded class SCR_AIGroup : ChimeraAIGroup
 		callsignComponent.GetCallsignIndexes(company, platoon, squad);
 		return 1000000 * company + 1000 * platoon + 1 * squad;
 	}
-	
-	// temp fix for https://feedback.bistudio.com/T196751
-	override bool SpawnDelayedGroupMember(int spawnIndex)
-	{
-		bool done = SpawnGroupMember(
-			m_delayedSpawnList.Get(spawnIndex).snapToTerrain,
-			m_delayedSpawnList.Get(spawnIndex).index,
-			m_delayedSpawnList.Get(spawnIndex).resourceName,
-			m_delayedSpawnList.Get(spawnIndex).editMode,
-			false
-		);
-		if (done && spawnIndex == 0 && Event_OnInit)
-				Event_OnInit.Invoke(this);
-		return done;
-	}
+
 }
