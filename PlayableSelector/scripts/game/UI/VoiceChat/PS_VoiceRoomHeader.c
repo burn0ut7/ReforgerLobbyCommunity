@@ -68,6 +68,8 @@ class PS_VoiceRoomHeader : SCR_ButtonBaseComponent
 		PS_VoNRoomsManager VoNRoomsManager = PS_VoNRoomsManager.GetInstance();
 		PS_PlayableManager playableManager = PS_PlayableManager.GetInstance();
 		PlayerController playerController = GetGame().GetPlayerController();
+		if (!playerController)
+			return;
 		int playerId = playerController.GetPlayerId();
 		
 		if (VoNRoomsManager.GetPlayerRoom(playerId) == m_iRoomId) {
