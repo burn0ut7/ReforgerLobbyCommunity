@@ -22,7 +22,7 @@ SCR_ChimeraCharacter : "{37578B1666981FCE}Prefabs/Characters/Core/Character_Base
    }
   }
   APS_LobbyVoNComponent "{6868240D3F748131}" {
-   Enabled 1
+   Enabled 0
    Filename "{BDE86953C7A1A084}Sounds/VON/FirstLobbyVon.acp"
   }
   ChimeraAIControlComponent "{520EA1D2DB109F34}" {
