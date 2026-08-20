@@ -913,6 +913,7 @@ class PS_PlayableControllerComponent : ScriptComponent
 			PS_ManualCameraSpectator.Cast(m_Camera).SetCharacterEntityMove(from);
 		
 		m_isSpectating = true;
+		AudioSystem.SetVariableByName("CharacterLifeState", 0, "{A60F08955792B575}Sounds/_SharedData/Variables/GlobalVariables.conf");
 	}
 
 	void SwitchFromObserver()
@@ -923,6 +924,8 @@ class PS_PlayableControllerComponent : ScriptComponent
 		SCR_EntityHelper.DeleteEntityAndChildren(m_Camera);
 		m_Camera = null;
 		m_isSpectating = false;
+		
+		AudioSystem.SetVariableByName("CharacterLifeState", 0, "{A60F08955792B575}Sounds/_SharedData/Variables/GlobalVariables.conf");
 	}
 
 	// Force change game state
