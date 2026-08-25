@@ -39,6 +39,7 @@ class PS_LobbyVoNComponent : SCR_VoNComponent
 {
 	const float PS_TRANSMISSION_TIMEOUT_MS = 400;
 	protected float PS_m_fTransmitingTimeout;
+	protected float m_fPSCaptureDiagnosticTimeout;
 	ref map<int, float> m_fPlayerSpeachReciveTime = new map<int, float>();
 	ref map<int, bool> m_fPlayerSpeachReciveIsChannel = new map<int, bool>();
 	
@@ -131,6 +132,11 @@ class PS_LobbyVoNComponent : SCR_VoNComponent
 	
 	override protected event void OnCapture(BaseTransceiver transmitter)
 	{
+		float worldTime = GetGame().GetWorld().GetWorldTime();
+		if (m_fPSCaptureDiagnosticTimeout < worldTime)
+			PS_LogCaptureDiagnostic(transmitter);
+		m_fPSCaptureDiagnosticTimeout = worldTime + PS_TRANSMISSION_TIMEOUT_MS;
+
 		int playerId = GetGame().GetPlayerController().GetPlayerId();
 		OnReceiveHandle(playerId, transmitter, 0, 0);
 	}
@@ -142,6 +148,7 @@ class PS_LobbyVoNComponent : SCR_VoNComponent
 	
 	void OnReceiveHandle(int playerId, BaseTransceiver receiver, int frequency, float quality)
 	{
+		bool shouldLogReceive = !IsPlayerSpeech(playerId);
 		if (!IsPlayerSpeech(playerId))
 		{
 			GetGame().GetCallqueue().Call(AwaitReceiveEnd, playerId);
@@ -151,15 +158,104 @@ class PS_LobbyVoNComponent : SCR_VoNComponent
 		if (frequency == 32000) {
 			bool isChannel = m_fPlayerSpeachReciveIsChannel[playerId];
 			m_fPlayerSpeachReciveIsChannel[playerId] = true;
+			if (!isChannel)
+				shouldLogReceive = true;
 			if (!alreadyReceive || !isChannel)
 				m_ScriptInvokerOnReceiveStart.Invoke(playerId, receiver, frequency, quality);
 		}
 		else {
 			bool isChannel = m_fPlayerSpeachReciveIsChannel[playerId];
 			m_fPlayerSpeachReciveIsChannel[playerId] = false;
+			if (isChannel)
+				shouldLogReceive = true;
 			if (!alreadyReceive || isChannel)
 				m_ScriptInvokerOnReceiveStart.Invoke(playerId, receiver, frequency, quality);
 		}
+
+		if (shouldLogReceive)
+			PS_LogReceiveDiagnostic(playerId, receiver, frequency, quality);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void PS_LogCaptureDiagnostic(BaseTransceiver transmitter)
+	{
+		PlayerController playerController = GetGame().GetPlayerController();
+		if (!playerController)
+		{
+			Print("[PS_VON_DIAG] event=NATIVE_CAPTURE playerController=NULL");
+			return;
+		}
+
+		int playerId = playerController.GetPlayerId();
+		PlayerManager playerManager = GetGame().GetPlayerManager();
+		string playerName = "<unknown>";
+		if (playerManager)
+			playerName = playerManager.GetPlayerName(playerId);
+
+		IEntity entity = playerController.GetControlledEntity();
+		vector position = vector.Zero;
+		if (entity)
+			position = entity.GetOrigin();
+
+		BaseRadioComponent radio;
+		if (transmitter)
+			radio = transmitter.GetRadio();
+
+		PrintFormat("[PS_VON_DIAG] event=NATIVE_CAPTURE player=%1 id=%2 position=%3 commMethod=%4", playerName, playerId, position, GetCommMethod());
+		if (transmitter)
+			PrintFormat("[PS_VON_DIAG] event=NATIVE_CAPTURE transmitter=%1 frequency=%2 radio=%3", transmitter, transmitter.GetFrequency(), radio);
+		else
+			Print("[PS_VON_DIAG] event=NATIVE_CAPTURE transmitter=NULL frequency=UNAVAILABLE radio=NULL");
+		if (radio)
+			PrintFormat("[PS_VON_DIAG] event=NATIVE_CAPTURE radioPowered=%1 editorRadio=%2 encryption=%3", radio.IsPowered(), radio.IsEditorRadio(), radio.GetEncryptionKey());
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void PS_LogReceiveDiagnostic(int senderId, BaseTransceiver receiver, int callbackFrequency, float quality)
+	{
+		PlayerManager playerManager = GetGame().GetPlayerManager();
+		string senderName = "<unknown>";
+		string listenerName = "<unknown>";
+		IEntity senderEntity;
+		if (playerManager)
+		{
+			senderName = playerManager.GetPlayerName(senderId);
+			senderEntity = playerManager.GetPlayerControlledEntity(senderId);
+		}
+
+		vector senderPosition = vector.Zero;
+		if (senderEntity)
+			senderPosition = senderEntity.GetOrigin();
+
+		PlayerController listenerController = GetGame().GetPlayerController();
+		int listenerId = -1;
+		IEntity listenerEntity;
+		if (listenerController)
+		{
+			listenerId = listenerController.GetPlayerId();
+			listenerEntity = listenerController.GetControlledEntity();
+			if (playerManager)
+				listenerName = playerManager.GetPlayerName(listenerId);
+		}
+
+		vector listenerPosition = vector.Zero;
+		if (listenerEntity)
+			listenerPosition = listenerEntity.GetOrigin();
+
+		BaseRadioComponent radio;
+		if (receiver)
+			radio = receiver.GetRadio();
+
+		PrintFormat("[PS_VON_DIAG] event=RECEIVE_START sender=%1 senderId=%2 senderPos=%3 listener=%4 listenerId=%5 listenerPos=%6 callbackFrequency=%7", senderName, senderId, senderPosition, listenerName, listenerId, listenerPosition, callbackFrequency);
+		if (receiver)
+			PrintFormat("[PS_VON_DIAG] event=RECEIVE_START receiver=%1 receiverFrequency=%2", receiver, receiver.GetFrequency());
+		else
+			Print("[PS_VON_DIAG] event=RECEIVE_START receiver=NULL receiverFrequency=UNAVAILABLE");
+		PrintFormat("[PS_VON_DIAG] event=RECEIVE_START senderId=%1 listenerId=%2 quality=%3", senderId, listenerId, quality);
+		if (radio)
+			PrintFormat("[PS_VON_DIAG] event=RECEIVE_START radio=%1 powered=%2 editorRadio=%3 encryption=%4", radio, radio.IsPowered(), radio.IsEditorRadio(), radio.GetEncryptionKey());
+		else
+			Print("[PS_VON_DIAG] event=RECEIVE_START radio=NULL (direct/non-radio VON or missing receiver)");
 	}
 	
 	void AwaitReceiveEnd(int playerId)
@@ -200,6 +296,11 @@ modded class SCR_VONController
 			return;
 
 		BaseRadioComponent radio = transceiver.GetRadio();
+		if (radio)
+			PrintFormat("[PS_VON_DIAG] event=RADIO_ENTRY_ADDED entry=%1 usable=%2 transceiver=%3 frequency=%4 radio=%5 powered=%6 editorRadio=%7 encryption=%8", entry, entry.IsUsable(), transceiver, transceiver.GetFrequency(), radio, radio.IsPowered(), radio.IsEditorRadio(), radio.GetEncryptionKey());
+		else
+			PrintFormat("[PS_VON_DIAG] event=RADIO_ENTRY_ADDED entry=%1 usable=%2 transceiver=%3 frequency=%4 radio=NULL", entry, entry.IsUsable(), transceiver, transceiver.GetFrequency());
+
 		if (!radio || radio.IsEditorRadio() || !radio.IsPowered())
 			return;
 
@@ -221,6 +322,7 @@ modded class SCR_VONController
 		if (!radio || !radio.IsPowered())
 			return;
 
+		PrintFormat("[PS_VON_DIAG] event=RADIO_REINIT_POWER_OFF radio=%1 poweredBefore=%2 encryption=%3", radio, radio.IsPowered(), radio.GetEncryptionKey());
 		radio.SetPower(false);
 		PS_SetRadioEntriesUsable(radio, false);
 
@@ -239,8 +341,10 @@ modded class SCR_VONController
 		if (!radio)
 			return;
 
+		PrintFormat("[PS_VON_DIAG] event=RADIO_REINIT_POWER_ON radio=%1 poweredBefore=%2 encryption=%3", radio, radio.IsPowered(), radio.GetEncryptionKey());
 		radio.SetPower(true);
 		PS_SetRadioEntriesUsable(radio, true);
+		PrintFormat("[PS_VON_DIAG] event=RADIO_REINIT_COMPLETE radio=%1 poweredAfter=%2", radio, radio.IsPowered());
 	}
 
 	//------------------------------------------------------------------------------------------------
