@@ -1034,6 +1034,21 @@ class PS_GameModeCoop : SCR_BaseGameMode
 			case SCR_EGameModeState.GAME:
 				AudioSystem.SetMasterVolume(AudioSystem.SFX, 1);
 				break;
+			case SCR_EGameModeState.DEBRIEFING: // Everyone talks together after the mission
+				if (!Replication.IsServer())
+					break;
+				foreach (int debriefPlayerId : playerIds)
+				{
+					PlayerController debriefPlayerController = GetGame().GetPlayerManager().GetPlayerController(debriefPlayerId);
+					if (!debriefPlayerController)
+						continue;
+					PS_PlayableControllerComponent debriefPlayableController = PS_PlayableControllerComponent.Cast(debriefPlayerController.FindComponent(PS_PlayableControllerComponent));
+					// MoveToRoom retunes the transceiver without checking it
+					if (!debriefPlayableController || !debriefPlayableController.GetTransceiver(EChannelType.PRIMARY))
+						continue;
+					VoNRoomsManager.MoveToRoom(debriefPlayerId, "", "#PS-VoNRoom_Global");
+				}
+				break;
 		}
 	}
 	
