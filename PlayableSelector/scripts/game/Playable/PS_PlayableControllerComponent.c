@@ -72,8 +72,6 @@ class PS_PlayableControllerComponent : ScriptComponent
 	void SwitchToMenu(SCR_EGameModeState state)
 	{
 		SetMenuState(state);
-		PrintFormat("[PS_VON_DIAG] event=MENU_STATE_ENTER playerController=%1 state=%2 isServer=%3", GetOwner(), state, Replication.IsServer());
-		PS_LogVoNStateBurst("MENU_STATE_ENTER");
 		MenuBase topMenu = GetGame().GetMenuManager().GetTopMenu();
 		if (topMenu)
 			topMenu.Close();
@@ -417,7 +415,6 @@ class PS_PlayableControllerComponent : ScriptComponent
 		SetEventMask(GetOwner(), EntityEvent.FRAME);
 		SCR_PlayerController playerController = SCR_PlayerController.Cast(PlayerController.Cast(GetOwner()));
 		playerController.m_OnControlledEntityChanged.Insert(OnControlledEntityChanged);
-		PS_LogVoNStateBurst("PLAYER_CONTROLLER_POST_INIT");
 		
 		PS_GameModeCoop gameModeCoop = PS_GameModeCoop.GetInstance();
 		if (!gameModeCoop)
@@ -452,9 +449,6 @@ class PS_PlayableControllerComponent : ScriptComponent
 		RplComponent rpl = RplComponent.Cast(GetOwner().FindComponent(RplComponent));
 		if (!rpl.IsOwner())
 			return;
-
-		PrintFormat("[PS_VON_DIAG] event=CONTROLLED_ENTITY_CHANGED playerId=%1 from=%2 to=%3 afterInitialSwitch=%4 isServer=%5", thisPlayerController.GetPlayerId(), from, to, m_bAfterInitialSwitch, Replication.IsServer());
-		PS_LogVoNStateBurst("CONTROLLED_ENTITY_CHANGED");
 		if (!from && !m_bAfterInitialSwitch)
 			return;
 		if (!to && !m_bAfterInitialSwitch)
@@ -704,229 +698,6 @@ class PS_PlayableControllerComponent : ScriptComponent
 	}
 
 	// ------------------ VoN controlls ------------------
-	protected string PS_GetVoNChannelName(EChannelType channel)
-	{
-		switch (channel)
-		{
-			case EChannelType.ADMIN:
-				return "ADMIN";
-			case EChannelType.PRIMARY:
-				return "PRIMARY";
-			case EChannelType.SECONDARY:
-				return "SECONDARY";
-		}
-
-		return "UNKNOWN";
-	}
-
-	protected void PS_LogVoNTransceiver(string eventName, EChannelType channel, BaseTransceiver transceiver)
-	{
-		string channelName = PS_GetVoNChannelName(channel);
-		if (!transceiver)
-		{
-			PrintFormat("[PS_VON_DIAG] event=%1 channel=%2(%3) transceiver=NULL", eventName, channelName, channel);
-			return;
-		}
-
-		BaseRadioComponent radio = transceiver.GetRadio();
-		if (!radio)
-		{
-			PrintFormat("[PS_VON_DIAG] event=%1 channel=%2(%3) transceiver=%4 frequency=%5 radio=NULL", eventName, channelName, channel, transceiver, transceiver.GetFrequency());
-			return;
-		}
-
-		PrintFormat("[PS_VON_DIAG] event=%1 channel=%2(%3) transceiver=%4 frequency=%5 radio=%6 powered=%7 editorRadio=%8 encryption=%9", eventName, channelName, channel, transceiver, transceiver.GetFrequency(), radio, radio.IsPowered(), radio.IsEditorRadio(), radio.GetEncryptionKey());
-	}
-
-	protected void PS_LogVoNFactionState(string eventName, int playerId, BaseTransceiver requestedTransceiver)
-	{
-		FactionKey factionKey = "<unavailable>";
-		FactionKey rememberedFactionKey = "<unavailable>";
-		FactionKey vanillaFactionKey = "<component unavailable>";
-		FactionKey controlledEntityFactionKey = "<component unavailable>";
-		FactionKey playableFactionKey = "<unavailable>";
-		RplId playableId = RplId.Invalid();
-		string factionIndexText = "UNAVAILABLE";
-		string expectedFrequencyText = "UNAVAILABLE";
-		string actualFrequencyText = "UNAVAILABLE";
-		string encryptionKey = "UNAVAILABLE";
-
-		PS_PlayableManager playableManager = PS_PlayableManager.GetInstance();
-		if (playableManager && playableManager.IsReplicated())
-		{
-			factionKey = playableManager.GetPlayerFactionKey(playerId);
-			rememberedFactionKey = playableManager.GetPlayerFactionKeyRemembered(playerId);
-			playableId = playableManager.GetPlayableByPlayer(playerId);
-			PS_PlayableContainer playableContainer = playableManager.GetPlayableById(playableId);
-			if (playableContainer)
-				playableFactionKey = playableContainer.GetFactionKey();
-			if (factionKey == "")
-				factionKey = "<unassigned>";
-			if (rememberedFactionKey == "")
-				rememberedFactionKey = "<none>";
-			if (playableId == RplId.Invalid())
-				playableFactionKey = "<no playable>";
-		}
-
-		PlayerController playerController = PlayerController.Cast(GetOwner());
-		if (playerController)
-		{
-			FactionAffiliationComponent playerAffiliation = FactionAffiliationComponent.Cast(playerController.FindComponent(SCR_PlayerFactionAffiliationComponent));
-			if (playerAffiliation)
-			{
-				vanillaFactionKey = playerAffiliation.GetAffiliatedFactionKey();
-				if (vanillaFactionKey == "")
-					vanillaFactionKey = "<unassigned>";
-			}
-
-			IEntity controlledEntity = playerController.GetControlledEntity();
-			if (controlledEntity)
-			{
-				FactionAffiliationComponent controlledAffiliation = FactionAffiliationComponent.Cast(controlledEntity.FindComponent(FactionAffiliationComponent));
-				if (controlledAffiliation)
-				{
-					controlledEntityFactionKey = controlledAffiliation.GetAffiliatedFactionKey();
-					if (controlledEntityFactionKey == "")
-						controlledEntityFactionKey = "<unassigned>";
-				}
-			}
-		}
-
-		BaseTransceiver secondaryTransceiver = GetTransceiver(EChannelType.SECONDARY);
-		if (secondaryTransceiver)
-			actualFrequencyText = secondaryTransceiver.GetFrequency().ToString();
-
-		BaseRadioComponent radio;
-		if (requestedTransceiver)
-			radio = requestedTransceiver.GetRadio();
-		if (!radio && secondaryTransceiver)
-			radio = secondaryTransceiver.GetRadio();
-		if (radio)
-			encryptionKey = radio.GetEncryptionKey();
-
-		if (factionKey != "<unavailable>" && factionKey != "<unassigned>")
-		{
-			FactionManager factionManager = GetGame().GetFactionManager();
-			if (factionManager)
-			{
-				Faction faction = factionManager.GetFactionByKey(factionKey);
-				if (faction)
-				{
-					int factionIndex = factionManager.GetFactionIndex(faction);
-					if (factionIndex >= 0)
-					{
-						factionIndexText = factionIndex.ToString();
-						expectedFrequencyText = (factionIndex + 1000).ToString();
-					}
-				}
-			}
-		}
-
-		PrintFormat("[PS_VON_DIAG] event=%1 detail=FACTION_STATE playerId=%2 customFaction=%3 rememberedFaction=%4 vanillaAffiliation=%5 controlledEntityFaction=%6 playableId=%7 playableFaction=%8", eventName, playerId, factionKey, rememberedFactionKey, vanillaFactionKey, controlledEntityFactionKey, playableId, playableFactionKey);
-		PrintFormat("[PS_VON_DIAG] event=%1 detail=FACTION_RADIO_EXPECTATION factionIndex=%2 expectedFactionFrequency=%3 actualFactionFrequency=%4 encryption=%5 radio=%6 secondaryTransceiver=%7", eventName, factionIndexText, expectedFrequencyText, actualFrequencyText, encryptionKey, radio, secondaryTransceiver);
-	}
-
-	void PS_LogVoNStateBurst(string eventName)
-	{
-		PS_LogVoNStateSample(eventName, 0);
-		GetGame().GetCallqueue().CallLater(PS_LogVoNStateSample, 250, false, eventName, 250);
-		GetGame().GetCallqueue().CallLater(PS_LogVoNStateSample, 1000, false, eventName, 1000);
-		GetGame().GetCallqueue().CallLater(PS_LogVoNStateSample, 3000, false, eventName, 3000);
-	}
-
-	protected void PS_LogVoNStateSample(string eventName, int sampleDelayMs)
-	{
-		PrintFormat("[PS_VON_DIAG] event=%1 detail=TIMED_SNAPSHOT delayMs=%2", eventName, sampleDelayMs);
-		PS_LogVoNState(eventName, EChannelType.PRIMARY, GetTransceiver(EChannelType.PRIMARY));
-	}
-
-	void PS_LogVoNState(string eventName, EChannelType requestedChannel, BaseTransceiver requestedTransceiver)
-	{
-		PlayerController playerController = PlayerController.Cast(GetOwner());
-		if (!playerController)
-		{
-			PrintFormat("[PS_VON_DIAG] event=%1 playerController=NULL", eventName);
-			return;
-		}
-
-		int playerId = playerController.GetPlayerId();
-		PlayerManager playerManager = GetGame().GetPlayerManager();
-		string playerName = "<unknown>";
-		if (playerManager)
-			playerName = playerManager.GetPlayerName(playerId);
-
-		IEntity controlledEntity = playerController.GetControlledEntity();
-		IEntity initialEntity = GetInitialEntity();
-		vector controlledPosition = vector.Zero;
-		vector radioPosition = vector.Zero;
-		if (controlledEntity)
-			controlledPosition = controlledEntity.GetOrigin();
-		if (initialEntity)
-			radioPosition = initialEntity.GetOrigin();
-
-		PS_LobbyVoNComponent von = GetVoN();
-		BaseTransceiver activeTransceiver;
-		ECommMethod commMethod = ECommMethod.DIRECT;
-		bool transmitting = false;
-		if (von)
-		{
-			activeTransceiver = von.GetTransmitRadio();
-			commMethod = von.GetCommMethod();
-			transmitting = von.IsTransmiting();
-		}
-
-		PS_VoNRoomsManager roomsManager = PS_VoNRoomsManager.GetInstance();
-		int roomId = -1;
-		string roomName = "<manager unavailable>";
-		if (roomsManager)
-		{
-			roomId = roomsManager.GetPlayerRoom(playerId);
-			roomName = roomsManager.GetRoomName(roomId);
-		}
-
-		SCR_EGameModeState gameState = SCR_EGameModeState.NULL;
-		PS_GameModeCoop gameMode = PS_GameModeCoop.GetInstance();
-		if (gameMode)
-			gameState = gameMode.GetState();
-
-		PrintFormat("[PS_VON_DIAG] event=%1 player=%2 id=%3 isServer=%4 rplMode=%5 gameState=%6 menuState=%7 controlledEntity=%8 controlledPos=%9", eventName, playerName, playerId, Replication.IsServer(), RplSession.Mode(), gameState, m_eMenuState, controlledEntity, controlledPosition);
-		PrintFormat("[PS_VON_DIAG] event=%1 radioEntity=%2 radioPos=%3 initialRplId=%4", eventName, initialEntity, radioPosition, m_InitialRplId);
-		PrintFormat("[PS_VON_DIAG] event=%1 roomId=%2 roomName='%3' requestedChannel=%4(%5) requestedTransceiver=%6 von=%7 commMethod=%8 transmitting=%9", eventName, roomId, roomName, PS_GetVoNChannelName(requestedChannel), requestedChannel, requestedTransceiver, von, commMethod, transmitting);
-		PS_LogVoNFactionState(eventName, playerId, requestedTransceiver);
-		PrintFormat("[PS_VON_DIAG] event=%1 activeTransceiver=%2", eventName, activeTransceiver);
-
-		PS_LogVoNTransceiver(eventName, EChannelType.ADMIN, GetTransceiver(EChannelType.ADMIN));
-		PS_LogVoNTransceiver(eventName, EChannelType.PRIMARY, GetTransceiver(EChannelType.PRIMARY));
-		PS_LogVoNTransceiver(eventName, EChannelType.SECONDARY, GetTransceiver(EChannelType.SECONDARY));
-
-		SCR_VONController vonController = SCR_VONController.Cast(playerController.FindComponent(SCR_VONController));
-		if (!vonController)
-		{
-			PrintFormat("[PS_VON_DIAG] event=%1 vonController=NULL", eventName);
-			return;
-		}
-
-		array<ref SCR_VONEntry> entries = {};
-		int entryCount = vonController.GetVONEntries(entries);
-		PrintFormat("[PS_VON_DIAG] event=%1 vonDisabled=%2 entryCount=%3 activeEntry=%4 controllerVoN=%5", eventName, vonController.IsVONDisabled(), entryCount, vonController.GetActiveEntry(), vonController.GetVONComponent());
-		foreach (int index, SCR_VONEntry entry : entries)
-		{
-			SCR_VONEntryRadio radioEntry = SCR_VONEntryRadio.Cast(entry);
-			if (!radioEntry)
-			{
-				PrintFormat("[PS_VON_DIAG] event=%1 entryIndex=%2 entry=%3 radioEntry=false usable=%4 active=%5 text='%6'", eventName, index, entry, entry.IsUsable(), entry.IsActive(), entry.GetDisplayText());
-				continue;
-			}
-
-			BaseTransceiver entryTransceiver = radioEntry.GetTransceiver();
-			if (entryTransceiver)
-				PrintFormat("[PS_VON_DIAG] event=%1 entryIndex=%2 entry=%3 usable=%4 active=%5 transceiverNumber=%6 cachedFrequency=%7 nativeFrequency=%8 transceiver=%9", eventName, index, entry, entry.IsUsable(), entry.IsActive(), radioEntry.GetTransceiverNumber(), radioEntry.GetEntryFrequency(), entryTransceiver.GetFrequency(), entryTransceiver);
-			else
-				PrintFormat("[PS_VON_DIAG] event=%1 entryIndex=%2 entry=%3 usable=%4 active=%5 transceiverNumber=%6 cachedFrequency=%7 nativeFrequency=UNAVAILABLE transceiver=NULL", eventName, index, entry, entry.IsUsable(), entry.IsActive(), radioEntry.GetTransceiverNumber(), radioEntry.GetEntryFrequency());
-			PrintFormat("[PS_VON_DIAG] event=%1 entryIndex=%2 text='%3'", eventName, index, entry.GetDisplayText());
-		}
-	}
-
 	BaseTransceiver GetTransceiver(EChannelType channel)
 	{
 		PlayerController pc = PlayerController.Cast(GetOwner());
@@ -946,45 +717,16 @@ class PS_PlayableControllerComponent : ScriptComponent
 		if(!radio)
 			return null;
 
-		BaseTransceiver transc = radio.GetTransceiver(channel);
-		PrintFormat("GC | Channel:%1 - transc:%2", channel, transc);
-		return transc;
+		return radio.GetTransceiver(channel);
 	}
 	
 	void MoveToFactionVoNRoomByKey(int playerId, FactionKey factionKey)
 	{
 		FactionManager fm = GetGame().GetFactionManager();
-		if (!fm)
-		{
-			PrintFormat("[PS_VON_DIAG] event=FACTION_FREQUENCY_DEFERRED playerId=%1 factionKey=%2 reason=faction_manager_unavailable", playerId, factionKey);
-			return;
-		}
-
-		Faction faction = fm.GetFactionByKey(factionKey);
-		if (!faction)
-		{
-			PrintFormat("[PS_VON_DIAG] event=FACTION_FREQUENCY_DEFERRED playerId=%1 factionKey=%2 reason=faction_definition_unavailable", playerId, factionKey);
-			return;
-		}
-
-		int factionIndex = fm.GetFactionIndex(faction);
-		if (factionIndex < 0)
-		{
-			PrintFormat("[PS_VON_DIAG] event=FACTION_FREQUENCY_DEFERRED playerId=%1 factionKey=%2 reason=faction_index_unavailable", playerId, factionKey);
-			return;
-		}
-
+		int factionIndex = fm.GetFactionIndex(fm.GetFactionByKey(factionKey));
 		BaseTransceiver transceiver = GetTransceiver(EChannelType.SECONDARY);
-		if (!transceiver)
-		{
-			PrintFormat("[PS_VON_DIAG] event=FACTION_FREQUENCY_DEFERRED playerId=%1 factionKey=%2 factionIndex=%3 reason=secondary_transceiver_unavailable", playerId, factionKey, factionIndex);
-			return;
-		}
-
-		int oldFrequency = transceiver.GetFrequency();
-		int factionFrequency = factionIndex + 1000;
-		transceiver.SetFrequency(factionFrequency);
-		PrintFormat("[PS_VON_DIAG] event=FACTION_FREQUENCY_APPLIED playerId=%1 factionKey=%2 factionIndex=%3 oldFrequency=%4 newFrequency=%5", playerId, factionKey, factionIndex, oldFrequency, transceiver.GetFrequency());
+		if (transceiver)
+			transceiver.SetFrequency(factionIndex + 1000);
 	}
 	
 	void MoveToVoNRoomByKey(int playerId, string roomKey)
@@ -1017,13 +759,7 @@ class PS_PlayableControllerComponent : ScriptComponent
 	PS_LobbyVoNComponent GetVoN()
 	{
 		PlayerController thisPlayerController = PlayerController.Cast(GetOwner());
-		if (!thisPlayerController)
-			return null;
-
 		IEntity entity = thisPlayerController.GetControlledEntity();
-		if (!entity)
-			return null;
-
 		PS_LobbyVoNComponent von = PS_LobbyVoNComponent.Cast(entity.FindComponent(PS_LobbyVoNComponent));
 		return von;
 	}
@@ -1036,9 +772,7 @@ class PS_PlayableControllerComponent : ScriptComponent
 		BaseTransceiver transceiver = GetTransceiver(EChannelType.PRIMARY);
 		von.SetTransmitRadio(transceiver);
 		von.SetCommMethod(ECommMethod.SQUAD_RADIO);
-		bool captureAccepted = von.SetCapture(true);
-		PrintFormat("[PS_VON_DIAG] event=PRESS_PRIMARY_CAPTURE_REQUEST result=%1", captureAccepted);
-		PS_LogVoNState("PRESS_PRIMARY_AFTER_CAPTURE", EChannelType.PRIMARY, transceiver);
+		von.SetCapture(true);
 	}
 	
 	void LobbyVoNFactionEnable()
@@ -1049,9 +783,7 @@ class PS_PlayableControllerComponent : ScriptComponent
 		BaseTransceiver transceiver = GetTransceiver(EChannelType.SECONDARY);
 		von.SetTransmitRadio(transceiver);
 		von.SetCommMethod(ECommMethod.SQUAD_RADIO);
-		bool captureAccepted = von.SetCapture(true);
-		PrintFormat("[PS_VON_DIAG] event=PRESS_FACTION_CAPTURE_REQUEST result=%1", captureAccepted);
-		PS_LogVoNState("PRESS_FACTION_AFTER_CAPTURE", EChannelType.SECONDARY, transceiver);
+		von.SetCapture(true);
 	}
 	
 	void LobbyVoNAdminEnable()
@@ -1062,12 +794,9 @@ class PS_PlayableControllerComponent : ScriptComponent
 		UpdatePosition(true);
 		GetGame().GetCallqueue().Remove(LobbyVoNDisableDelayed);
 		PS_LobbyVoNComponent von = GetVoN();
-		BaseTransceiver transceiver = GetTransceiver(EChannelType.ADMIN);
-		von.SetTransmitRadio(transceiver);
+		von.SetTransmitRadio(GetTransceiver(EChannelType.ADMIN));
 		von.SetCommMethod(ECommMethod.SQUAD_RADIO);
-		bool captureAccepted = von.SetCapture(true);
-		PrintFormat("[PS_VON_DIAG] event=PRESS_ADMIN_CAPTURE_REQUEST result=%1", captureAccepted);
-		PS_LogVoNState("PRESS_ADMIN_AFTER_CAPTURE", EChannelType.ADMIN, transceiver);
+		von.SetCapture(true);
 	}
 	
 	void LobbyVoNDisable()
@@ -1081,9 +810,7 @@ class PS_PlayableControllerComponent : ScriptComponent
 		if (!von)
 			return;
 		von.SetCommMethod(ECommMethod.DIRECT);
-		bool captureStopped = von.SetCapture(false);
-		PrintFormat("[PS_VON_DIAG] event=RELEASE_CAPTURE_REQUEST result=%1", captureStopped);
-		PS_LogVoNState("RELEASE_AFTER_CAPTURE_STOP", EChannelType.PRIMARY, von.GetTransmitRadio());
+		von.SetCapture(false);
 	}
 	
 	bool isVonInit()
@@ -1186,7 +913,6 @@ class PS_PlayableControllerComponent : ScriptComponent
 			PS_ManualCameraSpectator.Cast(m_Camera).SetCharacterEntityMove(from);
 		
 		m_isSpectating = true;
-		AudioSystem.SetVariableByName("CharacterLifeState", 0, "{A60F08955792B575}Sounds/_SharedData/Variables/GlobalVariables.conf");
 	}
 
 	void SwitchFromObserver()
@@ -1197,8 +923,6 @@ class PS_PlayableControllerComponent : ScriptComponent
 		SCR_EntityHelper.DeleteEntityAndChildren(m_Camera);
 		m_Camera = null;
 		m_isSpectating = false;
-		
-		AudioSystem.SetVariableByName("CharacterLifeState", 0, "{A60F08955792B575}Sounds/_SharedData/Variables/GlobalVariables.conf");
 	}
 
 	// Force change game state
@@ -1541,8 +1265,6 @@ class PS_PlayableControllerComponent : ScriptComponent
 		PS_GameModeCoop gamemode = PS_GameModeCoop.GetInstance();
 		
 		PS_PlayableManager playableManager = PS_PlayableManager.GetInstance();
-		PrintFormat("[PS_VON_DIAG] event=BRIEFING_SLOT_JOIN_SERVER_BEGIN playerId=%1 requestedFaction=%2 playableId=%3 callsign='%4' gameState=%5 currentFaction=%6 currentPlayable=%7", playerId, toFaction, playableId, callsign, gamemode.GetState(), playableManager.GetPlayerFactionKey(playerId), playableManager.GetPlayableByPlayer(playerId));
-		PS_LogVoNState("BRIEFING_SLOT_JOIN_SERVER_BEGIN", EChannelType.PRIMARY, GetTransceiver(EChannelType.PRIMARY));
 		int currentPlayerId = playableManager.GetPlayerByPlayable(playableId);
 		if(currentPlayerId != -1)
 			return;
@@ -1568,14 +1290,11 @@ class PS_PlayableControllerComponent : ScriptComponent
 				VoNRoomsManager.MoveToRoom(playerId, toFaction, callsign);
 			else
 				VoNRoomsManager.MoveToRoom(playerId, toFaction, "#PS-VoNRoom_Command");
-			PS_LogVoNState("BRIEFING_SLOT_JOIN_SERVER_AFTER_ROOM", EChannelType.PRIMARY, GetTransceiver(EChannelType.PRIMARY));
 		}
 
 		playableManager.SetPlayerFactionKey(playerId, toFaction);
 		playableManager.SetPlayerState(playerId, PS_EPlayableControllerState.NotReady);
 		playableManager.SetPlayerPlayable(playerId, playableId);
-		PrintFormat("[PS_VON_DIAG] event=BRIEFING_SLOT_JOIN_SERVER_COMMITTED playerId=%1 requestedFaction=%2 storedFaction=%3 playableId=%4 storedPlayable=%5", playerId, toFaction, playableManager.GetPlayerFactionKey(playerId), playableId, playableManager.GetPlayableByPlayer(playerId));
-		PS_LogVoNStateBurst("BRIEFING_SLOT_JOIN_SERVER_COMMITTED");
 		Rpc(RPC_DoJoinSlot, toFaction);
 	}
 	
@@ -1592,17 +1311,11 @@ class PS_PlayableControllerComponent : ScriptComponent
 	[RplRpc(RplChannel.Reliable, RplRcver.Owner)]
 	void RPC_DoJoinSlot(FactionKey toFaction)
 	{
-		PrintFormat("[PS_VON_DIAG] event=BRIEFING_SLOT_JOIN_OWNER_BEGIN requestedFaction=%1", toFaction);
-		PS_LogVoNState("BRIEFING_SLOT_JOIN_OWNER_BEGIN", EChannelType.PRIMARY, GetTransceiver(EChannelType.PRIMARY));
 		SCR_UISoundEntity.SoundEvent("SOUND_HUD_GADGET_SELECT");
 		SCR_FactionManager factionManager = SCR_FactionManager.Cast(GetGame().GetFactionManager());
 		SCR_Faction faction = SCR_Faction.Cast(factionManager.GetFactionByKey(toFaction));
 		if (faction)
 			SetMap(faction.GetMapPrefab());
-
-		PlayerController playerController = PlayerController.Cast(GetOwner());
-		MoveToFactionVoNRoomByKey(playerController.GetPlayerId(), toFaction);
-		PS_LogVoNStateBurst("BRIEFING_SLOT_JOIN_OWNER_COMPLETE");
 	}
 	
 	static PS_PlayableControllerComponent GetInstance()

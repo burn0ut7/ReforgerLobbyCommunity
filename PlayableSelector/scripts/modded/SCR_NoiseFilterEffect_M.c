@@ -9,6 +9,14 @@ modded class SCR_NoiseFilterEffect
 	{
 		super.DisplayControlledEntityChanged(from, to);
 
-		AudioSystem.SetVariableByName("CharacterLifeState", 0, "{A60F08955792B575}Sounds/_SharedData/Variables/GlobalVariables.conf");
+		ECharacterLifeState state = ECharacterLifeState.ALIVE;
+		if (m_pCharacterEntity)
+		{
+			CharacterControllerComponent charController = m_pCharacterEntity.GetCharacterController();
+			if (charController)
+				state = charController.GetLifeState();
+		}
+
+		AudioSystem.SetVariableByName("CharacterLifeState", state, "{A60F08955792B575}Sounds/_SharedData/Variables/GlobalVariables.conf");
 	}
 }

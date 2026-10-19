@@ -28,7 +28,7 @@ class PS_WaitScreen: MenuBase
 			m_wInfoText.SetText("Awaiting gamemode entity.");
 			return;
 		}
-		/*
+		
 		#ifdef WORKBENCH
 		if (gameMode.GetState() != SCR_EGameModeState.GAME)
 		{
@@ -47,7 +47,7 @@ class PS_WaitScreen: MenuBase
 			}
 		}
 		#endif
-		*/
+		
 		PlayerController playerController = GetGame().GetPlayerController();
 		if (!playerController)
 		{

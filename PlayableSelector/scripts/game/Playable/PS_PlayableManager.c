@@ -547,36 +547,18 @@ class PS_PlayableManager : ScriptComponent
 	// - Execute ONLY on server
 	void SetPlayerFactionKey(int playerId, FactionKey factionKey)
 	{
-		PlayerController playerController = m_PlayerManager.GetPlayerController(playerId);
-		FactionKey vanillaFactionBefore = "<controller unavailable>";
-		SCR_PlayerFactionAffiliationComponent playerFactionAffiliation;
-		if (playerController)
-		{
-			playerFactionAffiliation = SCR_PlayerFactionAffiliationComponent.Cast(playerController.FindComponent(SCR_PlayerFactionAffiliationComponent));
-			if (playerFactionAffiliation)
-				vanillaFactionBefore = playerFactionAffiliation.GetAffiliatedFactionKey();
-		}
-		PrintFormat("[PS_VON_DIAG] event=FACTION_SET_SERVER_BEGIN playerId=%1 oldCustomFaction=%2 requestedFaction=%3 rememberedFaction=%4 vanillaAffiliation=%5 gameState=%6", playerId, GetPlayerFactionKey(playerId), factionKey, GetPlayerFactionKeyRemembered(playerId), vanillaFactionBefore, m_GameModeCoop.GetState());
-
 		// Replicate update
 		RPC_SetPlayerFactionKey(playerId, factionKey);
 		Rpc(RPC_SetPlayerFactionKey, playerId, factionKey);
 
 		// Update vanilla faction
+		PlayerController playerController = m_PlayerManager.GetPlayerController(playerId);
 		if (!playerController)
-		{
-			PrintFormat("[PS_VON_DIAG] event=FACTION_SET_SERVER_DEFERRED playerId=%1 requestedFaction=%2 reason=player_controller_unavailable", playerId, factionKey);
 			return;
-		}
 		SCR_FactionManager factionManager = SCR_FactionManager.Cast(GetGame().GetFactionManager());
-		if (!playerFactionAffiliation)
-		{
-			PrintFormat("[PS_VON_DIAG] event=FACTION_SET_SERVER_DEFERRED playerId=%1 requestedFaction=%2 reason=affiliation_component_unavailable", playerId, factionKey);
-			return;
-		}
+		SCR_PlayerFactionAffiliationComponent playerFactionAffiliation = SCR_PlayerFactionAffiliationComponent.Cast(playerController.FindComponent(SCR_PlayerFactionAffiliationComponent));
 		playerFactionAffiliation.SetAffiliatedFactionByKey(factionKey);
 		factionManager.UpdatePlayerFaction_S(playerFactionAffiliation);
-		PrintFormat("[PS_VON_DIAG] event=FACTION_SET_SERVER_COMPLETE playerId=%1 customFaction=%2 rememberedFaction=%3 vanillaAffiliation=%4 requestedFaction=%5", playerId, GetPlayerFactionKey(playerId), GetPlayerFactionKeyRemembered(playerId), playerFactionAffiliation.GetAffiliatedFactionKey(), factionKey);
 	}
 	[RplRpc(RplChannel.Reliable, RplRcver.Broadcast)]
 	protected protected void RPC_SetPlayerFactionKey(int playerId, FactionKey factionKey)
@@ -585,14 +567,6 @@ class PS_PlayableManager : ScriptComponent
 		m_playersFaction[playerId] = factionKey;
 		if (factionKey != "")
 			m_playersFactionRemembered[playerId] = factionKey; // Remember last not null
-		PrintFormat("[PS_VON_DIAG] event=FACTION_MAP_REPLICATED playerId=%1 oldFaction=%2 newFaction=%3 rememberedFaction=%4 isServer=%5 rplMode=%6 replicatedReady=%7", playerId, factionKeyOld, factionKey, GetPlayerFactionKeyRemembered(playerId), Replication.IsServer(), RplSession.Mode(), m_bRplLoaded);
-		PlayerController localPlayerController = GetGame().GetPlayerController();
-		if (localPlayerController && localPlayerController.GetPlayerId() == playerId)
-		{
-			PS_PlayableControllerComponent localPlayableController = PS_PlayableControllerComponent.Cast(localPlayerController.FindComponent(PS_PlayableControllerComponent));
-			if (localPlayableController)
-				localPlayableController.PS_LogVoNStateBurst("FACTION_MAP_REPLICATED_LOCAL");
-		}
 		m_eOnFactionChange.Invoke(playerId, factionKey, factionKeyOld);
 	}
 
