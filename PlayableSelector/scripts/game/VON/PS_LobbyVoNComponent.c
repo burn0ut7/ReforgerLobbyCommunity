@@ -246,7 +246,20 @@ class PS_LobbyVoNComponent : SCR_VoNComponent
 		if (receiver)
 			radio = receiver.GetRadio();
 
-		PrintFormat("[PS_VON_DIAG] event=RECEIVE_START sender=%1 senderId=%2 senderPos=%3 listener=%4 listenerId=%5 listenerPos=%6 callbackFrequency=%7", senderName, senderId, senderPosition, listenerName, listenerId, listenerPosition, callbackFrequency);
+		FactionKey senderFaction = "<unavailable>";
+		FactionKey listenerFaction = "<unavailable>";
+		PS_PlayableManager playableManager = PS_PlayableManager.GetInstance();
+		if (playableManager && playableManager.IsReplicated())
+		{
+			senderFaction = playableManager.GetPlayerFactionKey(senderId);
+			listenerFaction = playableManager.GetPlayerFactionKey(listenerId);
+			if (senderFaction == "")
+				senderFaction = "<unassigned>";
+			if (listenerFaction == "")
+				listenerFaction = "<unassigned>";
+		}
+
+		PrintFormat("[PS_VON_DIAG] event=RECEIVE_START sender=%1 senderId=%2 senderFaction=%3 senderPos=%4 listener=%5 listenerId=%6 listenerFaction=%7 listenerPos=%8 callbackFrequency=%9", senderName, senderId, senderFaction, senderPosition, listenerName, listenerId, listenerFaction, listenerPosition, callbackFrequency);
 		if (receiver)
 			PrintFormat("[PS_VON_DIAG] event=RECEIVE_START receiver=%1 receiverFrequency=%2", receiver, receiver.GetFrequency());
 		else
@@ -273,14 +286,22 @@ class PS_LobbyVoNComponent : SCR_VoNComponent
 //------------------------------------------------------------------------------------------------
 // Arma Reforger 1.8 can leave an already-powered local radio unable to receive
 // VON after its radio entry is registered. Re-register the native receiver by
-// performing one delayed power cycle after the VON entry has stabilized.
-// Frequency and encryption are intentionally left unchanged.
+// performing a verified delayed power cycle after each VON entry registration.
+// This recovery is restricted to the always-on lobby radio and never changes
+// its encryption. The primary channel is reconciled with the replicated room.
 modded class SCR_VONController
 {
+	protected static const string PS_LOBBY_RADIO_ENCRYPTION_KEY = "lobby";
+	protected static const int PS_LOBBY_PRIMARY_TRANSCEIVER_NUMBER = 2;
 	protected static const int PS_RADIO_RECEIVER_STABILIZATION_DELAY_MS = 3000;
 	protected static const int PS_RADIO_RECEIVER_POWER_OFF_MS = 150;
+	protected static const int PS_RADIO_RECEIVER_VERIFY_DELAY_MS = 250;
+	protected static const int PS_RADIO_RECEIVER_RETRY_DELAY_MS = 500;
+	protected static const int PS_RADIO_RECEIVER_MONITOR_DELAY_MS = 2000;
+	protected static const int PS_RADIO_RECEIVER_MAX_RESTORE_ATTEMPTS = 6;
 
-	protected ref array<BaseRadioComponent> m_aPSReinitializedRadios = {};
+	protected ref array<BaseRadioComponent> m_aPSRecoveryRadios = {};
+	protected ref array<int> m_aPSRecoveryGenerations = {};
 
 	//------------------------------------------------------------------------------------------------
 	override void AddEntry(SCR_VONEntry entry)
@@ -301,50 +322,240 @@ modded class SCR_VONController
 		else
 			PrintFormat("[PS_VON_DIAG] event=RADIO_ENTRY_ADDED entry=%1 usable=%2 transceiver=%3 frequency=%4 radio=NULL", entry, entry.IsUsable(), transceiver, transceiver.GetFrequency());
 
-		if (!radio || radio.IsEditorRadio() || !radio.IsPowered())
+		if (!radio || radio.IsEditorRadio())
 			return;
 
-		if (m_aPSReinitializedRadios.Contains(radio))
+		// Do not alter ordinary gameplay radios which players may deliberately
+		// power off. The lobby radio is authored as always-on with this key.
+		if (radio.GetEncryptionKey() != PS_LOBBY_RADIO_ENCRYPTION_KEY)
 			return;
 
-		m_aPSReinitializedRadios.Insert(radio);
+		// RegisterVONEntries adds channels in order. Schedule once for channel 1,
+		// while every later re-registration receives a fresh generation.
+		if (radioEntry.GetTransceiverNumber() != 1)
+			return;
+
+		int generation = PS_AdvanceRadioRecoveryGeneration(radio);
+		PrintFormat("[PS_VON_DIAG] event=RADIO_RECOVERY_SCHEDULED radio=%1 generation=%2 powered=%3 delayMs=%4", radio, generation, radio.IsPowered(), PS_RADIO_RECEIVER_STABILIZATION_DELAY_MS);
 		GetGame().GetCallqueue().CallLater(
-			PS_ReinitializeRadioReceiver,
+			PS_BeginRadioReceiverRecovery,
 			PS_RADIO_RECEIVER_STABILIZATION_DELAY_MS,
 			false,
-			radio);
+			radio,
+			generation);
 	}
 
 	//------------------------------------------------------------------------------------------------
-	protected void PS_ReinitializeRadioReceiver(BaseRadioComponent radio)
+	override void RemoveEntry(SCR_VONEntry entry)
 	{
-		// Do not override a deliberate power-off made while waiting.
-		if (!radio || !radio.IsPowered())
+		SCR_VONEntryRadio radioEntry = SCR_VONEntryRadio.Cast(entry);
+		BaseRadioComponent radio;
+		int transceiverNumber;
+		if (radioEntry)
+		{
+			BaseTransceiver transceiver = radioEntry.GetTransceiver();
+			if (transceiver)
+				radio = transceiver.GetRadio();
+			transceiverNumber = radioEntry.GetTransceiverNumber();
+		}
+
+		super.RemoveEntry(entry);
+
+		if (!radio || transceiverNumber != 1 || radio.GetEncryptionKey() != PS_LOBBY_RADIO_ENCRYPTION_KEY)
 			return;
 
-		PrintFormat("[PS_VON_DIAG] event=RADIO_REINIT_POWER_OFF radio=%1 poweredBefore=%2 encryption=%3", radio, radio.IsPowered(), radio.GetEncryptionKey());
-		radio.SetPower(false);
-		PS_SetRadioEntriesUsable(radio, false);
-
-		// Keep the off/on operations on separate call-queue turns so the native
-		// radio system has time to unregister the receiver.
-		GetGame().GetCallqueue().CallLater(
-			PS_RestoreRadioReceiver,
-			PS_RADIO_RECEIVER_POWER_OFF_MS,
-			false,
-			radio);
+		int generation = PS_AdvanceRadioRecoveryGeneration(radio);
+		PrintFormat("[PS_VON_DIAG] event=RADIO_RECOVERY_INVALIDATED radio=%1 generation=%2 reason=entry_removed powered=%3", radio, generation, radio.IsPowered());
 	}
 
 	//------------------------------------------------------------------------------------------------
-	protected void PS_RestoreRadioReceiver(BaseRadioComponent radio)
+	protected int PS_AdvanceRadioRecoveryGeneration(BaseRadioComponent radio)
+	{
+		int index = m_aPSRecoveryRadios.Find(radio);
+		if (index == -1)
+		{
+			m_aPSRecoveryRadios.Insert(radio);
+			m_aPSRecoveryGenerations.Insert(1);
+			return 1;
+		}
+
+		int generation = m_aPSRecoveryGenerations[index] + 1;
+		m_aPSRecoveryGenerations[index] = generation;
+		return generation;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected bool PS_IsCurrentRadioRecovery(BaseRadioComponent radio, int generation)
+	{
+		int index = m_aPSRecoveryRadios.Find(radio);
+		return index != -1 && m_aPSRecoveryGenerations[index] == generation;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void PS_BeginRadioReceiverRecovery(BaseRadioComponent radio, int generation)
 	{
 		if (!radio)
 			return;
 
-		PrintFormat("[PS_VON_DIAG] event=RADIO_REINIT_POWER_ON radio=%1 poweredBefore=%2 encryption=%3", radio, radio.IsPowered(), radio.GetEncryptionKey());
+		if (!PS_IsCurrentRadioRecovery(radio, generation))
+		{
+			PrintFormat("[PS_VON_DIAG] event=RADIO_RECOVERY_STALE radio=%1 generation=%2 phase=begin powered=%3", radio, generation, radio.IsPowered());
+			return;
+		}
+
+		if (radio.GetEncryptionKey() != PS_LOBBY_RADIO_ENCRYPTION_KEY)
+			return;
+
+		bool poweredBefore = radio.IsPowered();
+		PS_SetRadioEntriesUsable(radio, false);
+
+		if (poweredBefore)
+		{
+			radio.SetPower(false);
+			PrintFormat("[PS_VON_DIAG] event=RADIO_RECOVERY_POWER_OFF radio=%1 generation=%2 poweredBefore=%3 poweredAfter=%4", radio, generation, poweredBefore, radio.IsPowered());
+		}
+		else
+		{
+			PrintFormat("[PS_VON_DIAG] event=RADIO_RECOVERY_FOUND_OFF radio=%1 generation=%2 action=restore", radio, generation);
+		}
+
+		GetGame().GetCallqueue().CallLater(
+			PS_RestoreRadioReceiver,
+			PS_RADIO_RECEIVER_POWER_OFF_MS,
+			false,
+			radio,
+			generation,
+			1);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void PS_RestoreRadioReceiver(BaseRadioComponent radio, int generation, int attempt)
+	{
+		if (!radio)
+			return;
+
+		if (!PS_IsCurrentRadioRecovery(radio, generation))
+		{
+			// A stale recovery may have powered the shared lobby radio off just
+			// before entries were removed. Restore its authored always-on state,
+			// then let the current generation perform its own verified cycle.
+			if (!radio.IsPowered())
+				radio.SetPower(true);
+			PrintFormat("[PS_VON_DIAG] event=RADIO_RECOVERY_STALE radio=%1 generation=%2 phase=restore powered=%3", radio, generation, radio.IsPowered());
+			return;
+		}
+
+		bool poweredBefore = radio.IsPowered();
 		radio.SetPower(true);
-		PS_SetRadioEntriesUsable(radio, true);
-		PrintFormat("[PS_VON_DIAG] event=RADIO_REINIT_COMPLETE radio=%1 poweredAfter=%2", radio, radio.IsPowered());
+		PrintFormat("[PS_VON_DIAG] event=RADIO_RECOVERY_POWER_ON radio=%1 generation=%2 attempt=%3 poweredBefore=%4 poweredImmediate=%5", radio, generation, attempt, poweredBefore, radio.IsPowered());
+
+		GetGame().GetCallqueue().CallLater(
+			PS_VerifyRadioReceiverRecovery,
+			PS_RADIO_RECEIVER_VERIFY_DELAY_MS,
+			false,
+			radio,
+			generation,
+			attempt);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void PS_VerifyRadioReceiverRecovery(BaseRadioComponent radio, int generation, int attempt)
+	{
+		if (!radio || !PS_IsCurrentRadioRecovery(radio, generation))
+			return;
+
+		if (radio.IsPowered())
+		{
+			PS_ApplyLobbyRoomFrequency(radio);
+			PS_SetRadioEntriesUsable(radio, true);
+			PrintFormat("[PS_VON_DIAG] event=RADIO_RECOVERY_VERIFIED radio=%1 generation=%2 attempt=%3 powered=%4 entriesUsable=1", radio, generation, attempt, radio.IsPowered());
+			GetGame().GetCallqueue().CallLater(
+				PS_MonitorLobbyRadioReceiver,
+				PS_RADIO_RECEIVER_MONITOR_DELAY_MS,
+				false,
+				radio,
+				generation);
+			return;
+		}
+
+		PS_SetRadioEntriesUsable(radio, false);
+		if (attempt >= PS_RADIO_RECEIVER_MAX_RESTORE_ATTEMPTS)
+		{
+			PrintFormat("[PS_VON_DIAG] event=RADIO_RECOVERY_FAILED radio=%1 generation=%2 attempts=%3 powered=0 entriesUsable=0", radio, generation, attempt);
+			return;
+		}
+
+		PrintFormat("[PS_VON_DIAG] event=RADIO_RECOVERY_RETRY radio=%1 generation=%2 nextAttempt=%3 powered=0 delayMs=%4", radio, generation, attempt + 1, PS_RADIO_RECEIVER_RETRY_DELAY_MS);
+		GetGame().GetCallqueue().CallLater(
+			PS_RestoreRadioReceiver,
+			PS_RADIO_RECEIVER_RETRY_DELAY_MS,
+			false,
+			radio,
+			generation,
+			attempt + 1);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void PS_MonitorLobbyRadioReceiver(BaseRadioComponent radio, int generation)
+	{
+		if (!radio || !PS_IsCurrentRadioRecovery(radio, generation))
+			return;
+
+		if (!radio.IsPowered())
+		{
+			PS_SetRadioEntriesUsable(radio, false);
+			PrintFormat("[PS_VON_DIAG] event=RADIO_RECOVERY_POWER_LOST radio=%1 generation=%2 action=restore entriesUsable=0", radio, generation);
+			GetGame().GetCallqueue().CallLater(
+				PS_RestoreRadioReceiver,
+				PS_RADIO_RECEIVER_RETRY_DELAY_MS,
+				false,
+				radio,
+				generation,
+				1);
+			return;
+		}
+
+		GetGame().GetCallqueue().CallLater(
+			PS_MonitorLobbyRadioReceiver,
+			PS_RADIO_RECEIVER_MONITOR_DELAY_MS,
+			false,
+			radio,
+			generation);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void PS_ApplyLobbyRoomFrequency(BaseRadioComponent radio)
+	{
+		PlayerController playerController = GetGame().GetPlayerController();
+		if (!playerController)
+			return;
+
+		PS_VoNRoomsManager roomsManager = PS_VoNRoomsManager.GetInstance();
+		if (!roomsManager)
+			return;
+
+		int playerId = playerController.GetPlayerId();
+		int roomId = roomsManager.GetPlayerRoom(playerId);
+		if (roomId < 0)
+			return;
+
+		array<ref SCR_VONEntry> entries = {};
+		GetVONEntries(entries);
+		foreach (SCR_VONEntry candidate : entries)
+		{
+			SCR_VONEntryRadio radioEntry = SCR_VONEntryRadio.Cast(candidate);
+			if (!radioEntry || radioEntry.GetTransceiverNumber() != PS_LOBBY_PRIMARY_TRANSCEIVER_NUMBER)
+				continue;
+
+			BaseTransceiver transceiver = radioEntry.GetTransceiver();
+			if (!transceiver || transceiver.GetRadio() != radio)
+				continue;
+
+			int oldFrequency = transceiver.GetFrequency();
+			transceiver.SetFrequency(roomId);
+			PrintFormat("[PS_VON_DIAG] event=RADIO_RECOVERY_ROOM_FREQUENCY_APPLIED playerId=%1 roomId=%2 oldFrequency=%3 newFrequency=%4", playerId, roomId, oldFrequency, transceiver.GetFrequency());
+			return;
+		}
 	}
 
 	//------------------------------------------------------------------------------------------------

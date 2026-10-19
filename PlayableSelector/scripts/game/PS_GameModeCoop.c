@@ -563,6 +563,8 @@ class PS_GameModeCoop : SCR_BaseGameMode
 	{
 		PS_PlayableManager playableManager = PS_PlayableManager.GetInstance();
 		string name = GetGame().GetPlayerManager().GetPlayerName(playerId);
+		PS_VoNRoomsManager roomsManager = PS_VoNRoomsManager.GetInstance();
+		PrintFormat("[PS_VON_DIAG] event=PLAYER_CONNECTED_SERVER player=%1 playerId=%2 gameState=%3 customFaction=%4 rememberedFaction=%5 playableId=%6 roomId=%7", name, playerId, GetState(), playableManager.GetPlayerFactionKey(playerId), playableManager.GetPlayerFactionKeyRemembered(playerId), playableManager.GetPlayableByPlayer(playerId), roomsManager.GetPlayerRoom(playerId));
 		playableManager.SetPlayerName(playerId, name);
 
 		// TODO: remove CallLater
@@ -880,6 +882,7 @@ class PS_GameModeCoop : SCR_BaseGameMode
 
 	void SpawnInitialEntity(int playerId)
 	{
+		PrintFormat("[PS_VON_DIAG] event=INITIAL_ENTITY_SPAWN_BEGIN playerId=%1 gameState=%2", playerId, GetState());
 		#ifdef WORKBENCH
 		IEntity WBCharacter = GetGame().GetPlayerManager().GetPlayerControlledEntity(playerId);
 		if (WBCharacter)
@@ -899,6 +902,8 @@ class PS_GameModeCoop : SCR_BaseGameMode
 		playableController.SetInitialEntity(initialEntity);
 		playerController.SetInitialMainEntity(initialEntity);
 		VoNRoomsManager.RestoreRoom(playerId);
+		PrintFormat("[PS_VON_DIAG] event=INITIAL_ENTITY_SPAWN_COMPLETE playerId=%1 gameState=%2 initialEntity=%3 roomId=%4 roomName='%5'", playerId, GetState(), initialEntity, VoNRoomsManager.GetPlayerRoom(playerId), VoNRoomsManager.GetRoomName(VoNRoomsManager.GetPlayerRoom(playerId)));
+		playableController.PS_LogVoNStateBurst("INITIAL_ENTITY_SPAWN_COMPLETE");
 	}
 
 	void TryRespawn(RplId playableId, int playerId)
@@ -1007,6 +1012,7 @@ class PS_GameModeCoop : SCR_BaseGameMode
 		GetGame().GetPlayerManager().GetPlayers(playerIds);
 
 		SCR_EGameModeState state = GetState();
+		PrintFormat("[PS_VON_DIAG] event=GAME_STATE_CHANGED state=%1 playerCount=%2 isServer=%3 rplMode=%4", state, playerIds.Count(), Replication.IsServer(), RplSession.Mode());
 		m_OnGameStateChange.Invoke(state);
 		switch (state)
 		{
@@ -1014,6 +1020,7 @@ class PS_GameModeCoop : SCR_BaseGameMode
 				foreach (int playerId : playerIds)
 				{
 					RplId playableId = playableManager.GetPlayableByPlayer(playerId);
+					PrintFormat("[PS_VON_DIAG] event=BRIEFING_ASSIGN_BEGIN playerId=%1 playableId=%2 customFaction=%3 rememberedFaction=%4 oldRoomId=%5 oldRoomName='%6'", playerId, playableId, playableManager.GetPlayerFactionKey(playerId), playableManager.GetPlayerFactionKeyRemembered(playerId), VoNRoomsManager.GetPlayerRoom(playerId), VoNRoomsManager.GetRoomName(VoNRoomsManager.GetPlayerRoom(playerId)));
 					if (playableId == RplId.Invalid())
 					{
 						playableManager.SetPlayerFactionKey(playerId, "");
@@ -1027,6 +1034,13 @@ class PS_GameModeCoop : SCR_BaseGameMode
 							VoNRoomsManager.MoveToRoom(playerId, playableManager.GetPlayerFactionKey(playerId), groupName);
 						}
 					}
+					PlayerController playerController = GetGame().GetPlayerManager().GetPlayerController(playerId);
+					PS_PlayableControllerComponent playableController;
+					if (playerController)
+						playableController = PS_PlayableControllerComponent.Cast(playerController.FindComponent(PS_PlayableControllerComponent));
+					PrintFormat("[PS_VON_DIAG] event=BRIEFING_ASSIGN_COMPLETE playerId=%1 playableId=%2 customFaction=%3 rememberedFaction=%4 roomId=%5 roomName='%6' controller=%7", playerId, playableId, playableManager.GetPlayerFactionKey(playerId), playableManager.GetPlayerFactionKeyRemembered(playerId), VoNRoomsManager.GetPlayerRoom(playerId), VoNRoomsManager.GetRoomName(VoNRoomsManager.GetPlayerRoom(playerId)), playableController);
+					if (playableController)
+						playableController.PS_LogVoNStateBurst("BRIEFING_ASSIGN_COMPLETE");
 				}
 				if (m_bHolsterWeapon)
 					playableManager.HolsterWeapons();

@@ -21,6 +21,9 @@ enum EChannelType
 
 class PS_VoNRoomsManager : ScriptComponent
 {
+	protected static const int PS_LOCAL_ROOM_FREQUENCY_RETRY_DELAY_MS = 250;
+	protected static const int PS_LOCAL_ROOM_FREQUENCY_MAX_ATTEMPTS = 40;
+
 	// server data
 	ref map<VoNRoomKey, int> m_mVoiceRoomsFromName = new map<VoNRoomKey, int>(); // room key to roomId relationship
 	
@@ -36,6 +39,7 @@ class PS_VoNRoomsManager : ScriptComponent
 	ref ScriptInvoker m_eOnRoomChanged = new ScriptInvoker(); // int playerId, int roomId, int oldRoomId
 		
 	bool m_bRplLoaded = false;
+	protected int m_iLocalRoomFrequencyReconcileGeneration;
 	bool IsReplicated()
 	{
 		return m_bRplLoaded;
@@ -54,6 +58,8 @@ class PS_VoNRoomsManager : ScriptComponent
 	
 	void OnPlayerConnected(int playerId)
 	{
+		PS_GameModeCoop gameMode = PS_GameModeCoop.GetInstance();
+		PrintFormat("[PS_VON_DIAG] event=ROOM_MANAGER_PLAYER_CONNECTED playerId=%1 gameState=%2 existingRoomId=%3", playerId, gameMode.GetState(), GetPlayerRoom(playerId));
 		// Create local room for player
 		GetOrCreateRoomWithFaction("", "#PS-VoNRoom_Local" + playerId.ToString());
 		GetOrCreateRoomWithFaction("", "#PS-VoNRoom_Public" + playerId.ToString());
@@ -78,18 +84,42 @@ class PS_VoNRoomsManager : ScriptComponent
 		
 		// Create new room and id if need
 		int roomId = GetOrCreateRoomWithFaction(factionKey, roomName);
+		PS_PlayableManager playableManagerSnapshot = PS_PlayableManager.GetInstance();
+		PrintFormat("[PS_VON_DIAG] event=ROOM_MOVE_SERVER_BEGIN playerId=%1 requestedFaction=%2 requestedRoom='%3' newRoomId=%4 oldRoomId=%5 customFaction=%6 rememberedFaction=%7", playerId, factionKey, roomName, roomId, GetPlayerRoom(playerId), playableManagerSnapshot.GetPlayerFactionKey(playerId), playableManagerSnapshot.GetPlayerFactionKeyRemembered(playerId));
 		
-		// Skip if same room
-		if (roomId == GetPlayerRoom(playerId))
-			return;
+		// A same-room request is intentional for JIP and entity replacement. The
+		// room map can already be correct while the newly-created radio is still
+		// on its authored default frequency, so the frequency must be reasserted.
+		bool sameRoom = roomId == GetPlayerRoom(playerId);
+		if (sameRoom)
+			PrintFormat("[PS_VON_DIAG] event=ROOM_MOVE_REASSERTED playerId=%1 roomId=%2", playerId, roomId);
 		
-		// Get global stuff
+		// Apply on the server when the radio is already available. The owning
+		// client also applies it from RPC_MoveToRoom with lifecycle retries.
 		PlayerManager playerManager = GetGame().GetPlayerManager();
 		PlayerController playerController = playerManager.GetPlayerController(playerId);
-		PS_PlayableControllerComponent playableController = PS_PlayableControllerComponent.Cast(playerController.FindComponent(PS_PlayableControllerComponent));
-		
-		BaseTransceiver transceiver = playableController.GetTransceiver(EChannelType.PRIMARY);
-		transceiver.SetFrequency(roomId);
+		PS_PlayableControllerComponent playableController;
+		if (playerController)
+			playableController = PS_PlayableControllerComponent.Cast(playerController.FindComponent(PS_PlayableControllerComponent));
+
+		BaseTransceiver transceiver;
+		if (playableController)
+			transceiver = playableController.GetTransceiver(EChannelType.PRIMARY);
+
+		if (transceiver)
+		{
+			int oldFrequency = transceiver.GetFrequency();
+			BaseRadioComponent radio = transceiver.GetRadio();
+			transceiver.SetFrequency(roomId);
+			if (radio)
+				PrintFormat("[PS_VON_DIAG] event=SERVER_ROOM_FREQUENCY_APPLIED playerId=%1 roomId=%2 oldFrequency=%3 newFrequency=%4 sameRoom=%5 radio=%6 powered=%7 encryption=%8", playerId, roomId, oldFrequency, transceiver.GetFrequency(), sameRoom, radio, radio.IsPowered(), radio.GetEncryptionKey());
+			else
+				PrintFormat("[PS_VON_DIAG] event=SERVER_ROOM_FREQUENCY_APPLIED playerId=%1 roomId=%2 oldFrequency=%3 newFrequency=%4 sameRoom=%5 radio=NULL", playerId, roomId, oldFrequency, transceiver.GetFrequency(), sameRoom);
+		}
+		else
+		{
+			PrintFormat("[PS_VON_DIAG] event=SERVER_ROOM_FREQUENCY_DEFERRED playerId=%1 roomId=%2 sameRoom=%3 reason=transceiver_unavailable", playerId, roomId, sameRoom);
+		}
 		
 		// Finally move client to room
 		RPC_MoveToRoom(playerId, roomId);
@@ -101,8 +131,165 @@ class PS_VoNRoomsManager : ScriptComponent
 		int oldRoomId = GetPlayerRoom(playerId);
 		
 		m_mPlayersRooms[playerId] = roomId;
+		PS_PlayableManager playableManager = PS_PlayableManager.GetInstance();
+		FactionKey customFaction = "<manager unavailable>";
+		FactionKey rememberedFaction = "<manager unavailable>";
+		if (playableManager)
+		{
+			customFaction = playableManager.GetPlayerFactionKey(playerId);
+			rememberedFaction = playableManager.GetPlayerFactionKeyRemembered(playerId);
+		}
+		PrintFormat("[PS_VON_DIAG] event=ROOM_MOVE_REPLICATED playerId=%1 oldRoomId=%2 newRoomId=%3 roomName='%4' customFaction=%5 rememberedFaction=%6 isServer=%7 rplMode=%8", playerId, oldRoomId, roomId, GetRoomName(roomId), customFaction, rememberedFaction, Replication.IsServer(), RplSession.Mode());
+
+		// The room map is replicated independently from the radio. Reconcile the
+		// owning client's radio after the RPC, retrying while JIP creates its
+		// player controller, initial entity, gadget, and transceiver.
+		PS_ScheduleLocalRoomFrequencyReconcile("room_rpc");
 		
 		m_eOnRoomChanged.Invoke(playerId, roomId, oldRoomId);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void PS_ScheduleLocalRoomFrequencyReconcile(string source)
+	{
+		if (RplSession.Mode() == RplMode.Dedicated)
+			return;
+
+		m_iLocalRoomFrequencyReconcileGeneration++;
+		int generation = m_iLocalRoomFrequencyReconcileGeneration;
+		GetGame().GetCallqueue().CallLater(PS_ReconcileLocalRoomFrequency, 1, false, source, generation, 1);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void PS_ReconcileLocalRoomFrequency(string source, int generation, int attempt)
+	{
+		if (generation != m_iLocalRoomFrequencyReconcileGeneration)
+			return;
+
+		PlayerController playerController = GetGame().GetPlayerController();
+		int playerId;
+		int roomId = -1;
+		string roomKey;
+		FactionKey factionKey;
+		int factionFrequency;
+		PS_PlayableControllerComponent playableController;
+		BaseTransceiver primaryTransceiver;
+		BaseTransceiver secondaryTransceiver;
+		string waitingFor = "player_controller";
+		bool factionFrequencyRequired;
+		bool factionFrequencyReady;
+
+		if (playerController)
+		{
+			playerId = playerController.GetPlayerId();
+			waitingFor = "player_id";
+			if (playerId != 0)
+			{
+				roomId = GetPlayerRoom(playerId);
+				waitingFor = "room_assignment";
+				if (roomId >= 0)
+				{
+					roomKey = GetRoomName(roomId);
+					factionFrequencyRequired = roomKey != "" && !roomKey.StartsWith("|");
+					playableController = PS_PlayableControllerComponent.Cast(playerController.FindComponent(PS_PlayableControllerComponent));
+					waitingFor = "playable_controller";
+					if (playableController)
+					{
+						primaryTransceiver = playableController.GetTransceiver(EChannelType.PRIMARY);
+						waitingFor = "primary_transceiver";
+
+						if (primaryTransceiver && factionFrequencyRequired)
+						{
+							PS_PlayableManager playableManager = PS_PlayableManager.GetInstance();
+							waitingFor = "playable_manager_snapshot";
+							if (playableManager && playableManager.IsReplicated())
+							{
+								factionKey = playableManager.GetPlayerFactionKey(playerId);
+								waitingFor = "faction_assignment";
+								if (factionKey != "" && roomKey.StartsWith(factionKey + "|"))
+								{
+									FactionManager factionManager = GetGame().GetFactionManager();
+									Faction faction;
+									waitingFor = "faction_manager";
+									if (factionManager)
+									{
+										faction = factionManager.GetFactionByKey(factionKey);
+										waitingFor = "faction_definition";
+										if (faction)
+										{
+											int factionIndex = factionManager.GetFactionIndex(faction);
+											waitingFor = "faction_index";
+											if (factionIndex >= 0)
+											{
+												factionFrequency = factionIndex + 1000;
+												secondaryTransceiver = playableController.GetTransceiver(EChannelType.SECONDARY);
+												waitingFor = "secondary_transceiver";
+												factionFrequencyReady = secondaryTransceiver != null;
+											}
+										}
+									}
+								}
+							}
+						}
+						else if (primaryTransceiver)
+						{
+							factionFrequencyReady = true;
+						}
+					}
+				}
+			}
+		}
+
+		if (primaryTransceiver)
+		{
+			int oldPrimaryFrequency = primaryTransceiver.GetFrequency();
+			primaryTransceiver.SetFrequency(roomId);
+			int newPrimaryFrequency = primaryTransceiver.GetFrequency();
+			if (oldPrimaryFrequency != roomId || attempt == 1)
+				PrintFormat("[PS_VON_DIAG] event=LOCAL_ROOM_FREQUENCY_APPLIED source=%1 attempt=%2 playerId=%3 roomId=%4 oldFrequency=%5 newFrequency=%6", source, attempt, playerId, roomId, oldPrimaryFrequency, newPrimaryFrequency);
+
+			if (newPrimaryFrequency != roomId)
+				waitingFor = "primary_frequency_apply";
+		}
+
+		if (primaryTransceiver && primaryTransceiver.GetFrequency() == roomId && factionFrequencyReady)
+		{
+			if (factionFrequencyRequired)
+			{
+				int oldFactionFrequency = secondaryTransceiver.GetFrequency();
+				secondaryTransceiver.SetFrequency(factionFrequency);
+				int newFactionFrequency = secondaryTransceiver.GetFrequency();
+				if (newFactionFrequency != factionFrequency)
+				{
+					waitingFor = "faction_frequency_apply";
+					factionFrequencyReady = false;
+				}
+				else
+				{
+					PrintFormat("[PS_VON_DIAG] event=LOCAL_FACTION_FREQUENCY_APPLIED source=%1 attempt=%2 playerId=%3 factionKey=%4 roomId=%5 oldFrequency=%6 newFrequency=%7", source, attempt, playerId, factionKey, roomId, oldFactionFrequency, newFactionFrequency);
+					return;
+				}
+			}
+			else
+			{
+				return;
+			}
+		}
+
+		if (!primaryTransceiver || primaryTransceiver.GetFrequency() != roomId || !factionFrequencyReady)
+		{
+			if (attempt >= PS_LOCAL_ROOM_FREQUENCY_MAX_ATTEMPTS)
+			{
+				PrintFormat("[PS_VON_DIAG] event=LOCAL_RADIO_FREQUENCY_FAILED source=%1 attempt=%2 playerId=%3 roomId=%4 roomKey=%5 factionKey=%6 waitingFor=%7", source, attempt, playerId, roomId, roomKey, factionKey, waitingFor);
+				return;
+			}
+
+			if (attempt == 1 || attempt % 8 == 0)
+				PrintFormat("[PS_VON_DIAG] event=LOCAL_RADIO_FREQUENCY_WAIT source=%1 attempt=%2 playerId=%3 roomId=%4 roomKey=%5 factionKey=%6 waitingFor=%7", source, attempt, playerId, roomId, roomKey, factionKey, waitingFor);
+
+			GetGame().GetCallqueue().CallLater(PS_ReconcileLocalRoomFrequency, PS_LOCAL_ROOM_FREQUENCY_RETRY_DELAY_MS, false, source, generation, attempt + 1);
+			return;
+		}
 	}
 	void RestoreRoom(int playerId)
 	{
@@ -284,6 +471,8 @@ class PS_VoNRoomsManager : ScriptComponent
 		}
 		
 		m_bRplLoaded = true;
+		PrintFormat("[PS_VON_DIAG] event=ROOM_JIP_SNAPSHOT_LOADED playerRoomCount=%1 voiceRoomCount=%2 localPlayerController=%3 isServer=%4 rplMode=%5", playersRoomsCount, voiceRoomsCount, GetGame().GetPlayerController(), Replication.IsServer(), RplSession.Mode());
+		PS_ScheduleLocalRoomFrequencyReconcile("jip_snapshot");
 		
 		return true;
 	}
