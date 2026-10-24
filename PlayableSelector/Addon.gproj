@@ -1,7 +1,7 @@
 GameProject {
- ID "ReforgerLobbyCommunity"
- GUID "0315131312150202"
- TITLE "Reforger Lobby Community"
+ ID "GCLobbyT"
+ GUID "0315131312150201"
+ TITLE "GC Lobby"
  Dependencies {
   "58D0FB3206B6F859" "1337133713371337"
  }
