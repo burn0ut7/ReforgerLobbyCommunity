@@ -7,6 +7,7 @@ class PS_PlayableVehicleContainer
 	int m_iGroupId;
 	FactionKey m_sFactionKey;
 	int m_iLocked;
+	string m_sDisplayName;
 	
 	protected ref ScriptInvokerBool m_eOnLockChange = new ScriptInvokerBool();
 	ScriptInvokerBool GetOnLockChange()
@@ -14,7 +15,7 @@ class PS_PlayableVehicleContainer
 		return m_eOnLockChange;
 	}
 	
-	void Init(int rplId, ResourceName prefabName, ResourceName iconPath, int groupCallsign, int groupId, FactionKey factionKey)
+	void Init(int rplId, ResourceName prefabName, ResourceName iconPath, int groupCallsign, int groupId, FactionKey factionKey, string displayName = "")
 	{
 		m_iRplId = rplId;
 		m_sPrefabName = prefabName;
@@ -23,6 +24,7 @@ class PS_PlayableVehicleContainer
 		m_iGroupId = groupId;
 		m_sFactionKey = factionKey;
 		m_iLocked = 0;
+		m_sDisplayName = displayName;
 	}
 	
 	// -------------------------- Replication ----------------------------
@@ -35,6 +37,7 @@ class PS_PlayableVehicleContainer
 		snapshot.SerializeInt(instance.m_iGroupId);
 		snapshot.SerializeString(instance.m_sFactionKey);
 		snapshot.SerializeInt(instance.m_iLocked);
+		snapshot.SerializeString(instance.m_sDisplayName);
 		return true;
 	}
 
@@ -47,6 +50,7 @@ class PS_PlayableVehicleContainer
 		snapshot.SerializeInt(instance.m_iGroupId);
 		snapshot.SerializeString(instance.m_sFactionKey);
 		snapshot.SerializeInt(instance.m_iLocked);
+		snapshot.SerializeString(instance.m_sDisplayName);
 		return true;
 	}
 
@@ -59,6 +63,7 @@ class PS_PlayableVehicleContainer
 		snapshot.EncodeInt(packet);
 		snapshot.EncodeString(packet);
 		snapshot.EncodeInt(packet);
+		snapshot.EncodeString(packet);
 	}
 
 	static bool Decode(ScriptBitSerializer packet, ScriptCtx ctx, SSnapSerializerBase snapshot)
@@ -70,6 +75,7 @@ class PS_PlayableVehicleContainer
 		snapshot.DecodeInt(packet);
 		snapshot.DecodeString(packet);
 		snapshot.DecodeInt(packet);
+		snapshot.DecodeString(packet);
 		return true;
 	}
 
@@ -81,7 +87,8 @@ class PS_PlayableVehicleContainer
 		    && lhs.CompareSnapshots(rhs, 4)
 		    && lhs.CompareSnapshots(rhs, 4)
 		    && lhs.CompareStringSnapshots(rhs)
-		    && lhs.CompareSnapshots(rhs, 4);
+		    && lhs.CompareSnapshots(rhs, 4)
+		    && lhs.CompareStringSnapshots(rhs);
 	}
 
 	static bool PropCompare(PS_PlayableVehicleContainer instance, SSnapSerializerBase snapshot, ScriptCtx ctx)
@@ -92,7 +99,8 @@ class PS_PlayableVehicleContainer
 		    && snapshot.CompareInt(instance.m_iGroupCallsign)
 		    && snapshot.CompareInt(instance.m_iGroupId)
 		    && snapshot.CompareString(instance.m_sFactionKey)
-		    && snapshot.CompareInt(instance.m_iLocked);
+		    && snapshot.CompareInt(instance.m_iLocked)
+		    && snapshot.CompareString(instance.m_sDisplayName);
 	}
 	
 	void Save(ScriptBitWriter writer)
@@ -104,6 +112,7 @@ class PS_PlayableVehicleContainer
 		writer.WriteInt(m_iGroupId);
 		writer.WriteString(m_sFactionKey);
 		writer.WriteInt(m_iLocked);
+		writer.WriteString(m_sDisplayName);
 	}
 	
 	void Load(ScriptBitReader reader)
@@ -115,6 +124,7 @@ class PS_PlayableVehicleContainer
 		reader.ReadInt(m_iGroupId);
 		reader.ReadString(m_sFactionKey);
 		reader.ReadInt(m_iLocked);
+		reader.ReadString(m_sDisplayName);
 	}
 	
 	void SetLock(bool lock)

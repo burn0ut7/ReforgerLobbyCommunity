@@ -4,6 +4,12 @@
 
 class PS_LobbyLoadoutPreview : SCR_WLibComponentBase
 {
+	// Temporary crash-isolation switch. Set true to restore opt-in vehicle previews.
+	protected static const bool ENABLE_VEHICLE_PREVIEWS = false;
+
+	protected bool m_bPreviewsEnabled;
+	protected ref array<string> m_aLoggedPreviewOperations = {};
+
 	protected ImageWidget m_wStateBackgroundImage;
 	protected ImageWidget m_wLoadoutBackgroundImage;
 	protected OverlayWidget m_WStateOverlay;
@@ -24,7 +30,55 @@ class PS_LobbyLoadoutPreview : SCR_WLibComponentBase
 	protected PS_LittleInventory m_hLittleInventory;
 	protected PS_PlayableVehicleContainer m_PlayableVehicleContainer;
 	protected PS_PlayableVehicleContainer m_PlayableVehicleContainerInventory;
+	protected static int s_iPreviewOperation;
 	
+	//------------------------------------------------------------------------------------------------
+	void SetPreviewsEnabled(bool enabled)
+	{
+		m_bPreviewsEnabled = enabled;
+		if (!enabled)
+			CloseInventory();
+		PrintFormat("[PS_PREVIEW] enabled=%1 vehiclesAllowed=%2", enabled, ENABLE_VEHICLE_PREVIEWS);
+	}
+
+	//------------------------------------------------------------------------------------------------
+	//! Log each operation/prefab once per component lifetime; no frame or disabled-hover logging.
+	protected int BeginPreviewOperation(string operation, ResourceName prefab)
+	{
+		string key = operation + prefab;
+		if (m_aLoggedPreviewOperations.Contains(key))
+			return 0;
+		m_aLoggedPreviewOperations.Insert(key);
+		s_iPreviewOperation++;
+		PrintFormat("[PS_PREVIEW] begin id=%1 operation=%2 prefab=%3", s_iPreviewOperation, operation, prefab);
+		return s_iPreviewOperation;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected IEntity ResolvePreview(ResourceName prefab)
+	{
+		if (!m_bPreviewsEnabled || prefab == "")
+			return null;
+		ItemPreviewManagerEntity manager = ChimeraWorld.CastFrom(GetGame().GetWorld()).GetItemPreviewManager();
+		int operationId = BeginPreviewOperation("resolve", prefab);
+		IEntity entity = manager.ResolvePreviewEntityForPrefab(prefab);
+		if (operationId)
+			PrintFormat("[PS_PREVIEW] end id=%1 entity=%2", operationId, entity);
+		return entity;
+	}
+
+	//------------------------------------------------------------------------------------------------
+	protected void DisplayPreview(ResourceName prefab)
+	{
+		if (!m_bPreviewsEnabled)
+			return;
+		ItemPreviewManagerEntity manager = ChimeraWorld.CastFrom(GetGame().GetWorld()).GetItemPreviewManager();
+		int operationId = BeginPreviewOperation("display", prefab);
+		manager.SetPreviewItemFromPrefab(m_Preview.GetItemPreviewWidget(), prefab);
+		if (operationId)
+			PrintFormat("[PS_PREVIEW] end id=%1", operationId);
+	}
+
 	override void HandlerAttached(Widget w)
 	{
 		super.HandlerAttached(w);
@@ -58,14 +112,17 @@ class PS_LobbyLoadoutPreview : SCR_WLibComponentBase
 	
 	void SetPreviewPlayableVehicle(PS_PlayableVehicleContainer playableVehicleContainer, bool openInventory)
 	{
+		if (!m_bPreviewsEnabled || !ENABLE_VEHICLE_PREVIEWS)
+			return;
 		if (m_hLittleInventory.GetRootWidget().IsVisible() && !openInventory)
 			return;
 		SetPreviewPlayable(RplId.Invalid(), "", false);
 		m_PlayableVehicleContainer = playableVehicleContainer;
 		
-		ItemPreviewManagerEntity previewManager = ChimeraWorld.CastFrom(GetGame().GetWorld()).GetItemPreviewManager();
-		previewManager.SetPreviewItemFromPrefab(m_Preview.GetItemPreviewWidget(), playableVehicleContainer.m_sPrefabName);
-		IEntity entity = previewManager.ResolvePreviewEntityForPrefab(playableVehicleContainer.m_sPrefabName);
+		DisplayPreview(playableVehicleContainer.m_sPrefabName);
+		IEntity entity = ResolvePreview(playableVehicleContainer.m_sPrefabName);
+		if (!entity)
+			return;
 		
 		m_WLoadoutOverlay.SetVisible(true);
 		SCR_Faction faction = playableVehicleContainer.GetFaction();
@@ -93,6 +150,8 @@ class PS_LobbyLoadoutPreview : SCR_WLibComponentBase
 	
 	void SetPreviewPlayable(RplId playableId, ResourceName prefabName, bool openInventory)
 	{
+		if (!m_bPreviewsEnabled)
+			return;
 		if (m_hLittleInventory.GetRootWidget().IsVisible() && !openInventory)
 			return;
 		if (prefabName != "")
@@ -104,8 +163,8 @@ class PS_LobbyLoadoutPreview : SCR_WLibComponentBase
 		m_sPrefabName = prefabName;
 		UpdatePreviewInfo();
 		IEntity entity = null;
-		ItemPreviewManagerEntity previewManager = ChimeraWorld.CastFrom(GetGame().GetWorld()).GetItemPreviewManager();
-		if (prefabName != "") entity = previewManager.ResolvePreviewEntityForPrefab(prefabName);
+		if (prefabName != "")
+			entity = ResolvePreview(prefabName);
 		m_hImportantItemsDisplay.SetEntity(entity);
 		
 		if (openInventory)
@@ -157,11 +216,16 @@ class PS_LobbyLoadoutPreview : SCR_WLibComponentBase
 	
 	void OpenInventory()
 	{
+		if (!m_bPreviewsEnabled)
+			return;
+		if (m_PlayableVehicleContainer && !ENABLE_VEHICLE_PREVIEWS)
+			return;
 		m_hLittleInventory.GetRootWidget().SetVisible(true);
 		IEntity entity = null;
-		ItemPreviewManagerEntity previewManager = ChimeraWorld.CastFrom(GetGame().GetWorld()).GetItemPreviewManager();
-		if (m_sPrefabName != "") entity = previewManager.ResolvePreviewEntityForPrefab(m_sPrefabName);
-		if (m_PlayableVehicleContainer != null) entity = previewManager.ResolvePreviewEntityForPrefab(m_PlayableVehicleContainer.m_sPrefabName);
+		if (m_sPrefabName != "")
+			entity = ResolvePreview(m_sPrefabName);
+		if (m_PlayableVehicleContainer != null)
+			entity = ResolvePreview(m_PlayableVehicleContainer.m_sPrefabName);
 		if (entity) m_hLittleInventory.OpenEntity(entity);
 	}
 	
@@ -175,20 +239,23 @@ class PS_LobbyLoadoutPreview : SCR_WLibComponentBase
 	
 	void UpdatePreviewInfo()
 	{
-		ItemPreviewManagerEntity previewManager = ChimeraWorld.CastFrom(GetGame().GetWorld()).GetItemPreviewManager();
+		if (!m_bPreviewsEnabled)
+			return;
 		
 		// Clear all data if playable is null and stop update
 		if (m_sPrefabName == "") {
 			m_WStateOverlay.SetVisible(false);
 			m_WLoadoutOverlay.SetVisible(false);
-			previewManager.SetPreviewItemFromPrefab(m_Preview.GetItemPreviewWidget(), m_sPrefabName);
+			DisplayPreview(m_sPrefabName);
 			return;
 		}
 		
 		// Show preview
 		m_WLoadoutOverlay.SetVisible(true);
 		
-		SCR_ChimeraCharacter character = SCR_ChimeraCharacter.Cast(previewManager.ResolvePreviewEntityForPrefab(m_sPrefabName));
+		SCR_ChimeraCharacter character = SCR_ChimeraCharacter.Cast(ResolvePreview(m_sPrefabName));
+		if (!character)
+			return;
 		SCR_Faction faction = SCR_Faction.Cast(character.GetFaction());
 		
 		// Extract all? items
@@ -269,7 +336,7 @@ class PS_LobbyLoadoutPreview : SCR_WLibComponentBase
 		// Set character preview. 
 		// LODs for some reason start rave party if you to far from character. 
 		// Yes it's performance issue but then why it switch between LODs? :<
-		previewManager.SetPreviewItemFromPrefab(m_Preview.GetItemPreviewWidget(), m_sPrefabName);
+		DisplayPreview(m_sPrefabName);
 		m_wLoadoutText.SetText(playableManager.GetPlayableName(m_iPlayableId));
 		
 		// Faction data

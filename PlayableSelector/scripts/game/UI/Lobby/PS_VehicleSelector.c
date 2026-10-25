@@ -89,12 +89,9 @@ class PS_VehicleSelector : SCR_ButtonComponent
 		// Initial setup
 		m_wVehicleFactionColor.SetColor(m_Faction.GetFactionColor());
 		
-		ItemPreviewManagerEntity previewManager = ChimeraWorld.CastFrom(GetGame().GetWorld()).GetItemPreviewManager();
-		IEntity entity = previewManager.ResolvePreviewEntityForPrefab(m_PlayableVehicleContainer.m_sPrefabName);
-		SCR_EditableVehicleComponent editableVehicleComponent = SCR_EditableVehicleComponent.Cast(entity.FindComponent(SCR_EditableVehicleComponent));
-		SCR_UIInfo uIInfo = editableVehicleComponent.GetInfo();
-		m_wUnitIcon.LoadImageTexture(0, uIInfo.GetIconPath());
-		m_wVehicleClassName.SetText(uIInfo.GetName());
+		// Row setup must not construct a preview entity, even when previews are enabled.
+		m_wUnitIcon.LoadImageTexture(0, playableVehicleContainer.GetIconPath());
+		m_wVehicleClassName.SetText(playableVehicleContainer.m_sDisplayName);
 		
 		// Events
 		playableVehicleContainer.GetOnLockChange().Insert(OnLockChange);

@@ -465,7 +465,7 @@ class PS_PlayableManager : ScriptComponent
 			prefab = vehicle.GetPrefabData().GetPrefab().GetAncestor().GetResourceName();
 		if (prefab == "")
 			prefab = vehicle.GetPrefabData().GetPrefab().GetAncestor().GetAncestor().GetResourceName();
-		playableVehicleContainer.Init(rplId, prefab, uIInfo.GetIconPath(), groupCallsign, group.m_PlayersGroup.GetGroupID(), vehicleFactionAffiliationComponent.GetDefaultFactionKey());
+		playableVehicleContainer.Init(rplId, prefab, uIInfo.GetIconPath(), groupCallsign, group.m_PlayersGroup.GetGroupID(), vehicleFactionAffiliationComponent.GetDefaultFactionKey(), uIInfo.GetName());
 		Rpc(RPC_RegisterGroupVehicle, playableVehicleContainer);
 		RPC_RegisterGroupVehicle(playableVehicleContainer);
 	}

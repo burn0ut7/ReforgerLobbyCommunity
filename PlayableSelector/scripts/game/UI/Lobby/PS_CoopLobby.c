@@ -206,6 +206,8 @@ class PS_CoopLobby : MenuBase
 		}
 		
 		m_LobbyLoadoutPreview.SetItemInfoWidget(m_wLobbyLittleInventoryItemInfo);
+		m_LobbyLoadoutPreview.SetPreviewsEnabled(false);
+		m_wLoadoutPreviewBody.SetVisible(false);
 		
 		UpdateButtons();
 		
@@ -382,7 +384,9 @@ class PS_CoopLobby : MenuBase
 	// Buttons
 	void OnClickedPreviewHide(SCR_ButtonBaseComponent factionButton)
 	{
-		m_wLoadoutPreviewBody.SetVisible(!m_wLoadoutPreviewBody.IsVisible());
+		bool enabled = !m_wLoadoutPreviewBody.IsVisible();
+		m_LobbyLoadoutPreview.SetPreviewsEnabled(enabled);
+		m_wLoadoutPreviewBody.SetVisible(enabled);
 	}
 	
 	void OnClickedPlayersSwitch(SCR_ButtonBaseComponent factionButton)
